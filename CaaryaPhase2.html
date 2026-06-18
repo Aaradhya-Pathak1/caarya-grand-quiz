@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Knowledge Cards · Process Documentation · CAARYA</title>
+ <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+ <style>
+ *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+ :root {
+ --red: #CC0000;
+ --red-deep: #8B0000;
+ --red-light: #fff0f0;
+ --ink: #141414;
+ --ink2: #2a2a2a;
+ --muted: #5a5a5a;
+ --faint: #999;
+ --rule: #e6e4e0;
+ --surface: #f7f6f3;
+ --bg: #faf9f7;
+ --white: #ffffff;
+ --green: #1a7f4b;
+ }
+
+ body {
+ font-family: 'DM Sans', sans-serif;
+ background: var(--bg);
+ min-height: 100vh;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ padding: 3rem 1rem 4rem;
+ }
+
+ .page {
+ background: var(--white);
+ max-width: 740px;
+ width: 100%;
+ border: 1px solid var(--rule);
+ box-shadow: 0 2px 32px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
+ }
+
+ /* ── TOP BAR ── */
+ .top-bar {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ padding: 0.85rem 2.5rem;
+ border-bottom: 1px solid var(--rule);
+ }
+ .logo-wrap { display: flex; align-items: center; gap: 8px; }
+ .logo-svg { width: 26px; height: 26px; }
+ .logo-text {
+ font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+ color: var(--ink); letter-spacing: 0.12em; text-transform: uppercase;
+ }
+ .top-bar-pill {
+ font-family: 'DM Mono', monospace; font-size: 10px; color: var(--red);
+ background: var(--red-light); border: 1px solid rgba(204,0,0,0.15);
+ border-radius: 20px; padding: 3px 10px; letter-spacing: 0.04em;
+ }
+ .top-bar-right {
+ font-family: 'DM Mono', monospace; font-size: 10px; color: var(--faint); letter-spacing: 0.06em;
+ }
+
+ /* ── HERO ── */
+ .hero { padding: 3.5rem 2.5rem 2.75rem; border-bottom: 1px solid var(--rule); }
+ .hero-eyebrow {
+ font-family: 'DM Mono', monospace; font-size: 10px; color: var(--red);
+ letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 1.1rem;
+ }
+ .hero-title {
+ font-family: 'Cormorant Garamond', serif; font-size: 52px; font-weight: 600;
+ color: var(--ink); line-height: 0.98; letter-spacing: -0.02em;
+ }
+ .hero-title em { font-style: italic; font-weight: 300; color: var(--muted); }
+ .hero-subtitle {
+ font-size: 14px; color: var(--muted); font-weight: 300; line-height: 1.75;
+ max-width: 480px; margin-top: 1.25rem;
+ }
+ .hero-meta {
+ display: flex; gap: 2rem; margin-top: 2rem; padding-top: 1.75rem;
+ border-top: 1px solid var(--rule); flex-wrap: wrap;
+ }
+ .meta-label {
+ font-family: 'DM Mono', monospace; font-size: 9px; color: var(--faint);
+ letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px;
+ }
+ .meta-val {
+ font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600;
+ color: var(--ink); letter-spacing: -0.01em;
+ }
+ .meta-val .red { color: var(--red); }
+
+ /* ── SECTION ── */
+ .sec { padding: 2.25rem 2.5rem; border-bottom: 1px solid var(--rule); }
+ .sec-eyebrow {
+ font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.18em;
+ text-transform: uppercase; color: var(--red); margin-bottom: 0.85rem;
+ }
+ .sec-title {
+ font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600;
+ color: var(--ink); letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.9rem;
+ }
+ .para { font-size: 14px; color: var(--muted); line-height: 1.85; font-weight: 300; }
+ .para + .para { margin-top: 0.85rem; }
+ .para strong { color: var(--ink2); font-weight: 500; }
+ .para em { font-style: italic; color: var(--ink2); }
+
+ /* ── KNOWLEDGE CARD ── */
+ .kc {
+ border: 1px solid var(--rule); background: var(--surface);
+ margin-top: 1.5rem; overflow: hidden;
+ }
+ .kc-head {
+ background: var(--ink); color: var(--white);
+ padding: 1.1rem 1.4rem; display: flex; align-items: baseline; gap: 0.75rem;
+ }
+ .kc-num {
+ font-family: 'DM Mono', monospace; font-size: 10px; color: var(--red-light);
+ background: var(--red); padding: 2px 8px; border-radius: 3px; letter-spacing: 0.08em;
+ }
+ .kc-tag {
+ font-family: 'Cormorant Garamond', serif; font-size: 19px; font-weight: 600;
+ letter-spacing: -0.01em; line-height: 1.2;
+ }
+ .kc-body { padding: 0.4rem 1.4rem 1.3rem; }
+ .kc-field { padding: 0.95rem 0; border-bottom: 1px solid var(--rule); }
+ .kc-field:last-child { border-bottom: none; }
+ .kc-label {
+ font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.14em;
+ text-transform: uppercase; color: var(--red); margin-bottom: 0.45rem;
+ display: flex; align-items: center; gap: 6px;
+ }
+ .kc-label .opt { color: var(--faint); }
+ .kc-text { font-size: 13.5px; color: var(--ink2); line-height: 1.7; font-weight: 300; }
+ .kc-text strong { font-weight: 500; color: var(--ink); }
+ .kc-prompt {
+ font-family: 'DM Mono', monospace; font-size: 12px; color: var(--ink2);
+ background: var(--white); border: 1px solid var(--rule); border-left: 3px solid var(--red);
+ padding: 0.7rem 0.85rem; line-height: 1.6; margin-top: 0.2rem;
+ }
+
+ .footer {
+ padding: 1.75rem 2.5rem; text-align: center;
+ font-family: 'DM Mono', monospace; font-size: 10px; color: var(--faint); letter-spacing: 0.08em;
+ }
+ @media (max-width: 560px) {
+ .hero-title { font-size: 40px; }
+ .hero.sec { padding-left: 1.5rem; padding-right: 1.5rem; }
+ .top-bar { padding-left: 1.5rem; padding-right: 1.5rem; }
+ }
+ </style>
+</head>
+<body>
+ <div class="page">
+
+ <div class="top-bar">
+ <div class="logo-wrap">
+ <svg class="logo-svg" viewBox="0 0 32 32" fill="none">
+ <circle cx="16" cy="16" r="15" stroke="#CC0000" stroke-width="1.5"/>
+ <circle cx="16" cy="16" r="5" fill="#CC0000"/>
+ </svg>
+ <span class="logo-text">Caarya</span>
+ </div>
+ <span class="top-bar-pill">#proof-of-work</span>
+ <span class="top-bar-right">PHASE 02 · SUBMISSION</span>
+ </div>
+
+ <div class="hero">
+ <div class="hero-eyebrow">Process Documentation · AI Track</div>
+ <h1 class="hero-title">What actually<br><em>happened</em></h1>
+ <p class="hero-subtitle">Building the Caarya Grand Quiz looked finished three times before it actually was. The product worked. The data behind it was quietly wrong. These cards are about the gap between "it runs" and "it's right".</p>
+ <div class="hero-meta">
+ <div class="meta-item">
+ <div class="meta-label">Work Unit</div>
+ <div class="meta-val">Quiz + Analytics</div>
+ </div>
+ <div class="meta-item">
+ <div class="meta-label">Cards</div>
+ <div class="meta-val"><span class="red">7</span> insights</div>
+ </div>
+ <div class="meta-item">
+ <div class="meta-label">Theme</div>
+ <div class="meta-val">Silent failure</div>
+ </div>
+ </div>
+ </div>
+
+ <!-- WORK UNIT DEFINITION -->
+ <div class="sec">
+ <div class="sec-eyebrow">01 · Work Unit Definition</div>
+ <h2 class="sec-title">What I was actually trying to do</h2>
+ <p class="para">I built a single-file web application: a 12-question, three-round trivia quiz that records each player's score and completion time to a <strong>Firebase Realtime Database</strong>, then renders a live analytics dashboard benchmarking that player against every prior participant: a percentile, a cognitive bracket, a bell curve, and a score-projection matrix.</p>
+ <p class="para">The <strong>Atomic Values</strong> I was creating: (1) make self-assessment frictionless by showing results instantly and visually; (2) produce a percentile signal that stays <em>trustworthy even when only a handful of people have played</em>; and (3) turn raw right/wrong answers into an interpretable performance narrative.</p>
+ <p class="para">Almost none of my real learning came from the parts that worked the first time. It came from a chain of failures where the code threw no error, the screen looked fine, and the behaviour or the stored data was silently wrong. Every card below is one of those.</p>
+ </div>
+
+ <!-- KNOWLEDGE CARDS -->
+ <div class="sec">
+ <div class="sec-eyebrow">02 · Knowledge Cards</div>
+ <h2 class="sec-title">Seven insights from the build</h2>
+
+ <!-- CARD 1 -->
+ <div class="kc">
+ <div class="kc-head"><span class="kc-num">01</span><span class="kc-tag">A change you can't see persisted is not a change</span></div>
+ <div class="kc-body">
+ <div class="kc-field"><div class="kc-label">Atomic Value</div><div class="kc-text">Reduced silent failures when editing files programmatically.</div></div>
+ <div class="kc-field"><div class="kc-label">Situation / Context</div><div class="kc-text">Expanding the quiz from 6 to 12 questions. I was using scripts to edit the HTML file's logic in bulk rather than by hand.</div></div>
+ <div class="kc-field"><div class="kc-label">The Friction</div><div class="kc-text">Round 1's answer buttons went completely dead. No error popup, no console crash visible to the user, clicking simply did nothing.</div></div>
+ <div class="kc-field"><div class="kc-label">What Failed</div><div class="kc-text">I checked the obvious suspects first: the button click handlers, the function that builds the options, the event binding. All correct. I even ran a syntax check, it passed. None of that was the problem, and I lost time there.</div></div>
+ <div class="kc-field"><div class="kc-label">What Worked</div><div class="kc-text">I stopped checking the <em>logic</em> and inspected the <em>actual values</em> in the saved file. The total was still 6; the points table and round-3 data were undefined. Root cause: the edit script changed the file <strong>in memory</strong> and printed a "success" check, but never wrote the result back to disk. Every later script then re-loaded the original, unchanged file.</div></div>
+ <div class="kc-field"><div class="kc-label">The Principle</div><div class="kc-text">Verify the <strong>side effect</strong>, not the intention. A "✓ done" log on an in-memory variable proves nothing, the only proof is reading the persisted artifact back. The bug wasn't in the code that runs; it was in the code that <em>saves</em>.</div></div>
+ <div class="kc-field"><div class="kc-label">When This Applies</div><div class="kc-text">Any scripted file edit, database migration, or batch transform with a write step. Irrelevant for pure functions that return a value and touch nothing external.</div></div>
+ <div class="kc-field"><div class="kc-label">AI Prompt Used</div><div class="kc-prompt">"the R1 quiz buttons are unresponsive"<br><span style="color:#999;">Deceptively simple. The fix was nowhere near the buttons.</span></div></div>
+ </div>
+ </div>
+
+ <!-- CARD 2 -->
+ <div class="kc">
+ <div class="kc-head"><span class="kc-num">02</span><span class="kc-tag">Change a data shape, and every reader breaks silently</span></div>
+ <div class="kc-body">
+ <div class="kc-field"><div class="kc-label">Atomic Value</div><div class="kc-text">Eliminated silent data-shape mismatches across the app.</div></div>
+ <div class="kc-field"><div class="kc-label">Situation / Context</div><div class="kc-text">Round 3 introduced a "skipped" state (timer ran out). I changed every result from <code>{correct: true}</code> to <code>{result: 'correct' | 'wrong' | 'skipped'}</code> to support it.</div></div>
+ <div class="kc-field"><div class="kc-label">The Friction</div><div class="kc-text">The cumulative-score trajectory chart drew a dead-flat line along the bottom, every point pinned at zero.</div></div>
+ <div class="kc-field"><div class="kc-label">What Failed</div><div class="kc-text">I first suspected the chart's coordinate math and y-axis scaling. That was a red herring.</div></div>
+ <div class="kc-field"><div class="kc-label">What Worked</div><div class="kc-text">The chart's counter still read the <em>old</em> field: <code>if (r.correct) cum++</code>. That property no longer existed, so it returned <code>undefined</code> every time, the counter never moved, and every point sat at zero. Changed it to <code>r.result === 'correct'</code>.</div></div>
+ <div class="kc-field"><div class="kc-label">The Principle</div><div class="kc-text">In JavaScript, reading a property that doesn't exist returns <code>undefined</code>; it <strong>does not throw</strong>. So a schema change creates an invisible bug in every consumer you forget to migrate. The real fix is never just the write site; it's tracing every <em>read</em>.</div></div>
+ <div class="kc-field"><div class="kc-label">When This Applies</div><div class="kc-text">Any data-model change in a loosely-typed language. A typed language (TypeScript) would have flagged this at compile time, which is itself the takeaway.</div></div>
+ <div class="kc-field"><div class="kc-label">AI Prompt Used</div><div class="kc-prompt">"the cumulative score trajectory ... is not good, correct them"</div></div>
+ </div>
+ </div>
+
+ <!-- CARD 3 -->
+ <div class="kc">
+ <div class="kc-head"><span class="kc-num">03</span><span class="kc-tag">A spec value hardcoded in two places will drift apart</span></div>
+ <div class="kc-body">
+ <div class="kc-field"><div class="kc-label">Atomic Value</div><div class="kc-text">Stopped permanent data corruption at the storage boundary.</div></div>
+ <div class="kc-field"><div class="kc-label">Situation / Context</div><div class="kc-text">The pipeline that writes each player's score to Firebase, after the quiz grew from 6 to 12 questions.</div></div>
+ <div class="kc-field"><div class="kc-label">The Friction</div><div class="kc-text">Nearly invisible, no crash, and scores looked correct on the results screen. The damage was happening in the database, not the UI.</div></div>
+ <div class="kc-field"><div class="kc-label">What Failed</div><div class="kc-text">I'd updated the total to 12 and the display logic, and <em>assumed</em> the data-writing layer had followed along.</div></div>
+ <div class="kc-field"><div class="kc-label">What Worked</div><div class="kc-text">A verification question forced me to re-read the write code, where I found <code>Math.min(6, score)</code>, a leftover from the 6-question era. Every score of 7 to 12 was being silently clamped to 6 <em>before being stored</em>, quietly poisoning the entire global distribution. Changed to clamp at 12.</div></div>
+ <div class="kc-field"><div class="kc-label">The Principle</div><div class="kc-text">A number that encodes a spec value (the max score) must come from a <strong>single source of truth</strong>, not be retyped wherever it's needed. The most dangerous bugs don't crash; they produce plausible-looking wrong data, and at a storage boundary that corruption is permanent.</div></div>
+ <div class="kc-field"><div class="kc-label">When This Applies</div><div class="kc-text">Anywhere a constant appears more than once, especially at write-to-storage points. Less critical for display-only values you can recompute.</div></div>
+ <div class="kc-field"><div class="kc-label">AI Prompt Used</div><div class="kc-prompt">"you are calculating percentile based on scores first and then time right?"<br><span style="color:#999;">A sanity-check question, not a bug report. It surfaced the bug anyway.</span></div></div>
+ </div>
+ </div>
+
+ <!-- CARD 4 -->
+ <div class="kc">
+ <div class="kc-head"><span class="kc-num">04</span><span class="kc-tag">A correct number from too little data is still a lie</span></div>
+ <div class="kc-body">
+ <div class="kc-field"><div class="kc-label">Atomic Value</div><div class="kc-text">Made a statistic trustworthy at small sample sizes.</div></div>
+ <div class="kc-field"><div class="kc-label">Situation / Context</div><div class="kc-text">Computing a global percentile from the live distribution of every player's score in Firebase.</div></div>
+ <div class="kc-field"><div class="kc-label">The Friction</div><div class="kc-text">A player who got 7/12 was shown at the 95th percentile. It felt obviously wrong for a middling score.</div></div>
+ <div class="kc-field"><div class="kc-label">What Failed</div><div class="kc-text">My instinct was "the math is broken." It wasn't. With only ~3 people in the database and this player being the fastest, they had <em>genuinely</em> beaten 95% of that tiny pool. The calculation was correct and the result was meaningless.</div></div>
+ <div class="kc-field"><div class="kc-label">What Worked</div><div class="kc-text">A <strong>Bayesian blend</strong>: a hand-built theoretical percentile table acts as a prior, and the live data's influence grows with sample size, <code>blend = min(1, players / 100)</code>. At 3 players the result hugs the theory; at 100+ it trusts the live data fully.</div></div>
+ <div class="kc-field"><div class="kc-label">The Principle</div><div class="kc-text">Statistical confidence scales with sample size. A "correct" percentile from n=3 is just noise dressed up as a real number. Leaning on a sensible default when data is thin, and trusting the live numbers only as they accumulate, keeps the result honest. This is the basic idea behind Bayesian shrinkage.</div></div>
+ <div class="kc-field"><div class="kc-label">When This Applies</div><div class="kc-text">Any rating, ranking, or average over a small or growing population, early product reviews, new leaderboards, A/B tests before they reach significance. Unnecessary once samples are large and stable.</div></div>
+ <div class="kc-field"><div class="kc-label">AI Prompt Used</div><div class="kc-prompt">"how is 7/12 a 95 percentile? it shouldn't be so high"</div></div>
+ </div>
+ </div>
+
+ <!-- CARD 5 -->
+ <div class="kc">
+ <div class="kc-head"><span class="kc-num">05</span><span class="kc-tag">Stitch two data sources, and their shared rules don't survive</span></div>
+ <div class="kc-body">
+ <div class="kc-field"><div class="kc-label">Atomic Value</div><div class="kc-text">Guaranteed logical consistency in the projection display.</div></div>
+ <div class="kc-field"><div class="kc-label">Situation / Context</div><div class="kc-text">The score-projection matrix shows what percentile each nearby score would earn. Your own row used live data; the projected rows used the static estimate table.</div></div>
+ <div class="kc-field"><div class="kc-label">The Friction</div><div class="kc-text">Rows for <em>higher</em> scores were displaying <em>lower</em> percentiles than the user's own, e.g. 9/12 at 80th while the player at 7/12 sat at 81st. Impossible: more correct answers cannot rank you worse.</div></div>
+ <div class="kc-field"><div class="kc-label">What Failed</div><div class="kc-text">Filling each row from its own independent source. The live scale and the static scale didn't agree, so the ordering broke.</div></div>
+ <div class="kc-field"><div class="kc-label">What Worked</div><div class="kc-text">Anchor every projected row to the player's <em>actual</em> percentile plus the theoretical <strong>gain</strong>: <code>rowPct = yourPct + (estimate[s] − estimate[yourScore])</code>. Higher score now always maps to a higher percentile by construction.</div></div>
+ <div class="kc-field"><div class="kc-label">The Principle</div><div class="kc-text">When you combine two data sources, an invariant each satisfies <em>alone</em> (here: monotonicity) is <strong>not</strong> automatically preserved in the combination. You have to name the invariant and enforce it explicitly.</div></div>
+ <div class="kc-field"><div class="kc-label">When This Applies</div><div class="kc-text">Merging datasets, blending model outputs, combining live and cached values, any UI showing a derived ordering.</div></div>
+ <div class="kc-field"><div class="kc-label">AI Prompt Used</div><div class="kc-prompt">"9/12 and 8/12 should not be lower than my score ... pls fix everything"</div></div>
+ </div>
+ </div>
+
+ <!-- CARD 6 -->
+ <div class="kc">
+ <div class="kc-head"><span class="kc-num">06</span><span class="kc-tag">Edge cases deserve a line of code, not a formula's guess</span></div>
+ <div class="kc-body">
+ <div class="kc-field"><div class="kc-label">Atomic Value</div><div class="kc-text">Made the top-end result feel correct and earned.</div></div>
+ <div class="kc-field"><div class="kc-label">Situation / Context</div><div class="kc-text">The Bayesian blend from Card 04 applied to every score, including a perfect 12/12.</div></div>
+ <div class="kc-field"><div class="kc-label">The Friction</div><div class="kc-text">A perfect score showed as 98th percentile instead of the top. The blend was averaging the theoretical 99 against a slightly lower live value and dragging it down.</div></div>
+ <div class="kc-field"><div class="kc-label">What Failed</div><div class="kc-text">Trusting the general formula to handle the boundary. A perfect score is conceptually the ceiling, but the formula treated it as just one more data point.</div></div>
+ <div class="kc-field"><div class="kc-label">What Worked</div><div class="kc-text">An explicit early return: <code>if (score === 12) return 99</code>. No blending at the boundary.</div></div>
+ <div class="kc-field"><div class="kc-label">The Principle</div><div class="kc-text">General formulas are built for the general case; boundaries (max, min, empty, single item) routinely violate their assumptions and deserve explicit, readable handling. Bonus: the 100th percentile is mathematically undefined, you can't outrank yourself, so 99 is the honest ceiling.</div></div>
+ <div class="kc-field"><div class="kc-label">When This Applies</div><div class="kc-text">Any formula with meaningful limits, score caps, division near zero, empty collections, first/last elements.</div></div>
+ <div class="kc-field"><div class="kc-label">AI Prompt Used</div><div class="kc-prompt">"shouldn't one get 100 percentile at 150 points (max)?"</div></div>
+ </div>
+ </div>
+
+ <!-- CARD 7 -->
+ <div class="kc">
+ <div class="kc-head"><span class="kc-num">07</span><span class="kc-tag">The impressive tool isn't always the right one</span></div>
+ <div class="kc-body">
+ <div class="kc-field"><div class="kc-label">Atomic Value</div><div class="kc-text">Traded a flashy capability for reliability the product actually needed.</div></div>
+ <div class="kc-field"><div class="kc-label">Situation / Context</div><div class="kc-text">Early on, I generated the quiz questions and their images dynamically using the Gemini API, so every play could be different.</div></div>
+ <div class="kc-field"><div class="kc-label">The Friction</div><div class="kc-text">Live generation meant I couldn't guarantee the questions were correct, fair, or consistently difficult, and every play added network latency, an API cost, and a dependency that could fail.</div></div>
+ <div class="kc-field"><div class="kc-label">What Failed</div><div class="kc-text">The "impressive" version. AI-generated trivia is fine as a demo, but for an assessment that ranks people, unverifiable and inconsistent questions undermine the entire point, a fair score needs a fair, fixed test.</div></div>
+ <div class="kc-field"><div class="kc-label">What Worked</div><div class="kc-text">I replaced it with a hand-curated, fixed question bank and lightweight inline SVG images. Reliable quality, consistent difficulty, zero latency, zero cost, and it kept the project a single self-contained file with no external dependencies.</div></div>
+ <div class="kc-field"><div class="kc-label">The Principle</div><div class="kc-text">Choose tools by what the product needs, not by what's most impressive. For content that must be <em>correct and consistent</em>, a controlled fixed source beats live generation. Cutting a dependency is often a feature, not a downgrade.</div></div>
+ <div class="kc-field"><div class="kc-label">When This Applies</div><div class="kc-text">Any decision between dynamic AI generation and curated content, quizzes, assessments, anything where correctness and fairness matter more than novelty. Less relevant for purely exploratory or entertainment features.</div></div>
+ <div class="kc-field"><div class="kc-label">AI Prompt Used</div><div class="kc-prompt">Initially used Gemini API calls to generate questions + images; later removed entirely in favour of a fixed bank.</div></div>
+ </div>
+ </div>
+ </div>
+
+ <div class="footer">CAARYA · AI TRACK · PHASE 02 · PROCESS DOCUMENTATION</div>
+
+ </div>
+</body>
+</html>
