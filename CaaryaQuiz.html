@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'DM Mono', monospace; color: #1a1a1a; padding: 20px;
+            display: flex; justify-content: center; min-height: 100vh;
+            background:
+                radial-gradient(ellipse 70% 50% at 15% 10%, rgba(64,96,180,0.35), transparent 60%),
+                radial-gradient(ellipse 60% 45% at 85% 85%, rgba(80,60,160,0.28), transparent 60%),
+                radial-gradient(ellipse 45% 35% at 75% 15%, rgba(251,176,59,0.10), transparent 65%),
+                radial-gradient(ellipse 50% 40% at 30% 90%, rgba(40,80,170,0.25), transparent 60%),
+                linear-gradient(160deg, #0a1430 0%, #0e1c42 45%, #101a3c 70%, #0a1228 100%);
+            background-attachment: fixed;
+        }
+        /* ── starfield ── */
+        #skyBg {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+        }
+        .star {
+            position: absolute; border-radius: 50%;
+            animation: twinkle var(--dur, 3s) ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: var(--base, 0.4); transform: scale(1); }
+            50%       { opacity: 1; transform: scale(1.25); }
+        }
+        .sparkle {
+            position: absolute; color: #FBB03B;
+            text-shadow: 0 0 8px rgba(251,176,59,0.9), 0 0 22px rgba(251,176,59,0.5);
+            animation: sparklePulse var(--dur, 5s) ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+            user-select: none;
+        }
+        @keyframes sparklePulse {
+            0%, 100% { opacity: 0.45; transform: scale(0.85) rotate(0deg); }
+            50%       { opacity: 1; transform: scale(1.15) rotate(20deg); }
+        }
+        .shooting-star {
+            position: absolute; width: 110px; height: 1.5px;
+            background: linear-gradient(90deg, rgba(255,217,122,0.95), transparent);
+            border-radius: 2px; opacity: 0;
+            transform: rotate(-30deg);
+            animation: shoot 9s linear infinite;
+            animation-delay: var(--delay, 0s);
+        }
+        @keyframes shoot {
+            0%       { opacity: 0; transform: translate(0,0) rotate(-30deg); }
+            1.5%     { opacity: 1; }
+            6%       { opacity: 0; transform: translate(-340px, 196px) rotate(-30deg); }
+            100%     { opacity: 0; transform: translate(-340px, 196px) rotate(-30deg); }
+        }
+        .card { background: #fff; border-radius: 14px; box-shadow: 0 18px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06); max-width: 980px; width: 100%; overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 1; }
+
+        .header { background: #0d0d0d; color: white; padding: 20px 28px; display: flex; justify-content: space-between; align-items: center; }
+        .hdr-brand { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 800; color: #FBB03B; letter-spacing: 1.5px; }
+        .hdr-title { font-size: 0.62rem; color: #aaa; letter-spacing: 2.5px; text-transform: uppercase; text-align: right; }
+        .progress-container { background: #0d0d0d; height: 4px; }
+        .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #FBB03B, #f97316); transition: width 0.4s ease; }
+
+        .game-area { display: flex; flex-direction: row; min-height: 500px; }
+        .quiz-content { flex: 1.2; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+        h3 { font-family: 'Syne', sans-serif; font-size: 1.3rem; margin-bottom: 24px; line-height: 1.6; font-weight: 700; }
+        p { font-size: 0.88rem; line-height: 1.8; color: #888; margin-bottom: 12px; }
+        .options-grid { display: grid; gap: 11px; }
+        button.opt-btn { background: #f7f7f7; color: #1a1a1a; border: 1.5px solid #e8e8e8; padding: 15px 18px; font-size: 0.9rem; border-radius: 8px; cursor: pointer; transition: all 0.18s; font-weight: 500; text-align: left; font-family: 'DM Mono', monospace; }
+        button.opt-btn:hover { background: #0d0d0d; color: #FBB03B; border-color: #0d0d0d; }
+
+        /* ── Floating music dock (all screens) ── */
+        #musicDock {
+            position: fixed; bottom: 22px; right: 22px; z-index: 2000;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+        }
+        #musicToggle {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: #0d0d0d; color: #FBB03B; border: 2.5px solid #ffffff;
+            font-size: 1.3rem; cursor: pointer; transition: all 0.25s;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.5), 0 0 14px rgba(255,255,255,0.25);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #musicToggle:hover { transform: scale(1.08); box-shadow: 0 4px 22px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.45); }
+        #musicToggle.music-on {
+            border-color: #FBB03B;
+            box-shadow: 0 4px 22px rgba(251,176,59,0.5);
+            animation: musicPulse 2s ease-in-out infinite;
+        }
+        @keyframes musicPulse {
+            0%, 100% { box-shadow: 0 4px 18px rgba(251,176,59,0.35); }
+            50%      { box-shadow: 0 4px 26px rgba(251,176,59,0.7); }
+        }
+        #genreRow {
+            display: flex; flex-direction: column; gap: 7px; align-items: flex-end;
+            background: #ffffff; border: 1.5px solid #e8e8e8; border-radius: 14px;
+            padding: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+        }
+        #genreRow.hidden { display: none; }
+        .genre-pill {
+            background: #f7f7f7; border: 1.5px solid #e8e8e8; color: #555;
+            font-family: 'DM Mono', monospace; font-size: 0.72rem;
+            padding: 8px 14px; border-radius: 16px; cursor: pointer;
+            transition: all 0.25s ease; opacity: 1; width: 130px; text-align: left;
+        }
+        .genre-pill:hover { border-color: #0d0d0d; color: #0d0d0d; }
+        /* when a genre is active: chosen pill amber, the rest dimmed + blurred */
+        #genreRow.has-active .genre-pill { opacity: 0.35; filter: blur(0.6px) grayscale(0.6); }
+        #genreRow.has-active .genre-pill.active {
+            opacity: 1; filter: none;
+            background: #0d0d0d; color: #FBB03B; border-color: #0d0d0d;
+            box-shadow: 0 2px 12px rgba(251,176,59,0.35);
+        }
+        .action-btn { background: #0d0d0d; color: white; border: none; padding: 16px 20px; font-size: 0.9rem; border-radius: 8px; cursor: pointer; font-weight: 700; text-align: center; transition: 0.2s; font-family: 'Syne', sans-serif; letter-spacing: 0.5px; width: 100%; }
+        .action-btn:hover { background: #222; }
+        .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+        .topic-btn { background: #fff; border: 2px solid #FBB03B; color: #1a1a1a; font-weight: 700; padding: 14px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-family: 'Syne', sans-serif; font-size: 0.88rem; }
+        .topic-btn:hover { background: #FBB03B; color: #fff; }
+        .image-container { flex: 0.8; background: #0d0d0d; overflow: hidden; }
+        .image-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; }
+        .modal-content h3 { color: #FBB03B; margin-bottom: 16px; font-family: 'Syne', sans-serif; }
+        .iq-list { list-style: none; margin: 0 0 20px; }
+        .iq-list li { padding: 11px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; }
+        .score-badge { background: #0d0d0d; color: white; padding: 3px 10px; border-radius: 5px; font-weight: 700; font-size: 0.82rem; font-family: 'Syne', sans-serif; }
+        .hidden { display: none !important; }
+
+        /* ================================================================
+           ANALYTICS REPORT
+        ================================================================ */
+        #analyticsReport { background: #070707; font-family: 'DM Mono', monospace; color: #ccc; }
+        .ar-wrap { padding: 24px 26px 30px; }
+
+        /* Header */
+        .ar-hdr { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #141414; padding-bottom: 16px; margin-bottom: 20px; }
+        .ar-eyebrow { font-size: 0.58rem; color: #FBB03B; letter-spacing: 3.5px; text-transform: uppercase; margin-bottom: 5px; }
+        .ar-name { font-family: 'Syne', sans-serif; font-size: 1.55rem; font-weight: 800; color: #fff; letter-spacing: 0.5px; }
+        .ar-meta { text-align: right; font-size: 0.65rem; color: #999; line-height: 1.9; letter-spacing: 0.5px; }
+        .ar-meta em { color: #bbb; font-style: normal; }
+
+        /* Badges */
+        .ar-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.6rem; padding: 3px 8px; border-radius: 4px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+        .ar-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+        .ar-badge-live { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); color: #22c55e; }
+        .ar-badge-live::before { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+        .ar-badge-offline { background: #111; border: 1px solid #1e1e1e; color: #888; }
+        .ar-badge-offline::before { background: #888; }
+
+        /* KPI Row */
+        .ar-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-bottom: 14px; }
+        .ar-kpi { background: #0d0d0d; border: 1px solid #141414; border-radius: 8px; padding: 14px 15px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+        .ar-kpi-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+        .ar-kpi-icon { position: absolute; right: 11px; top: 9px; font-size: 1.1rem; opacity: 0.07; }
+        /* Fixed: DM Mono instead of wide Syne 800 — no more horizontal stretch */
+        .ar-kpi-val {
+            font-family: 'DM Mono', monospace;
+            font-size: 1.6rem; font-weight: 500; line-height: 1.2; margin: 4px 0 6px;
+            opacity: 0; transform: translateY(8px);
+            animation: kpiUp 0.45s ease-out forwards;
+            letter-spacing: -0.5px;
+        }
+        .ar-kpi:nth-child(1) .ar-kpi-val { animation-delay: 0.15s; }
+        .ar-kpi:nth-child(2) .ar-kpi-val { animation-delay: 0.28s; }
+        .ar-kpi:nth-child(3) .ar-kpi-val { animation-delay: 0.41s; }
+        .ar-kpi:nth-child(4) .ar-kpi-val { font-size: 0.85rem; font-weight: 400; line-height: 1.35; letter-spacing: 0; animation-delay: 0.54s; }
+        @keyframes kpiUp { to { opacity: 1; transform: translateY(0); } }
+        .ar-kpi-lbl { font-size: 0.64rem; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+
+        /* Section boxes */
+        .ar-box { background: #0d0d0d; border: 1px solid #141414; border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
+        .ar-box-ttl { font-size: 0.64rem; color: #FBB03B; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+        .ar-box-ttl::after { content: ''; flex: 1; height: 1px; background: #141414; }
+
+        /* Bell curve */
+        .ar-bell-svg { width: 100%; overflow: visible; }
+        .ar-bell-shade { animation: shadeReveal 1.4s ease-out 0.5s both; }
+        @keyframes shadeReveal { from { opacity: 0; } to { opacity: 1; } }
+        .ar-bell-curve { animation: curveReveal 0.8s ease-out 0.2s both; }
+        @keyframes curveReveal { from { opacity: 0; stroke-dashoffset: 2000; } to { opacity: 1; stroke-dashoffset: 0; } }
+
+        /* Beat stat */
+        .ar-beat { display: flex; align-items: center; gap: 16px; border-top: 1px solid #141414; padding-top: 14px; margin-top: 14px; }
+        .ar-beat-big { font-family: 'DM Mono', monospace; font-size: 2.4rem; font-weight: 500; color: #FBB03B; line-height: 1; }
+        .ar-beat-sub { font-size: 0.74rem; color: #999; line-height: 1.8; }
+        .ar-beat-sub strong { color: #ccc; }
+
+        /* Two-column */
+        .ar-cols { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 12px; margin-bottom: 12px; }
+
+        /* Question trail */
+        .ar-trail { display: flex; align-items: flex-start; gap: 4px; }
+        .ar-trail-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .ar-trail-divider { width: 1px; background: #1e1e1e; height: 50px; margin: 0 2px; align-self: center; }
+        .ar-bubble { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 800; transition: transform 0.2s; cursor: default; }
+        .ar-bubble:hover { transform: scale(1.12); }
+        .ar-bubble.pass { background: #14532d; color: #4ade80; border: 1px solid #166534; }
+        .ar-bubble.fail { background: #450a0a; color: #f87171; border: 1px solid #7f1d1d; }
+        .ar-q-lbl  { font-size: 0.62rem; color: #aaa;  letter-spacing: 1px;   text-align: center; }
+        .ar-q-cat  { font-size: 0.58rem; color: #999;  letter-spacing: 0.5px; text-align: center; max-width: 42px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .ar-round-row { display: flex; justify-content: space-between; font-size: 0.6rem; color: #999; letter-spacing: 1.5px; margin-top: 10px; text-transform: uppercase; }
+
+        /* Score bar */
+        .ar-sbar { display: flex; gap: 3px; height: 5px; border-radius: 4px; overflow: hidden; margin: 14px 0 5px; }
+        .ar-sbar-seg { flex: 1; border-radius: 2px; }
+        .ar-sbar-seg.pass { background: #16a34a; }
+        .ar-sbar-seg.fail { background: #dc2626; opacity: 0.3; }
+        .ar-sbar-seg.skip { background: #555; opacity: 0.4; }
+        .ar-sbar-lbl { display: flex; justify-content: space-between; font-size: 0.62rem; color: #999; }
+
+        /* Pulse chart */
+        .ar-pulse-wrap { margin-top: 14px; }
+        .ar-pulse-ttl { font-size: 0.62rem; color: #999; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+        .ar-pulse-svg { width: 100%; }
+
+        /* Predictive matrix */
+        .ar-pred-item { display: flex; align-items: center; gap: 7px; padding: 8px 9px; border-radius: 6px; margin-bottom: 5px; transition: background 0.2s; }
+        .ar-pred-item.cur { background: rgba(251,176,59,0.08); border: 1px solid rgba(251,176,59,0.22); animation: pulseAmber 2s ease 1.5s 2; }
+        .ar-pred-item.above { background: rgba(34,197,94,0.04); border: 1px solid rgba(34,197,94,0.1); }
+        .ar-pred-item.below { background: rgba(80,80,80,0.04); border: 1px solid rgba(80,80,80,0.08); }
+        @keyframes pulseAmber { 0%,100% { box-shadow: 0 0 0 0 rgba(251,176,59,0); } 50% { box-shadow: 0 0 0 3px rgba(251,176,59,0.12); } }
+        .ar-pred-score { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 800; min-width: 30px; color: #aaa; }
+        .ar-pred-item.cur .ar-pred-score { color: #FBB03B; }
+        .ar-pred-item.above .ar-pred-score { color: #4ade80; }
+        .ar-pred-bar { flex: 1; background: #111; border-radius: 2px; height: 3px; overflow: hidden; }
+        .ar-pred-fill { height: 100%; border-radius: 2px; transition: width 1.2s cubic-bezier(0.16,1,0.3,1) 0.8s; }
+        .ar-pred-item.cur .ar-pred-fill { background: #FBB03B; }
+        .ar-pred-item.above .ar-pred-fill { background: #22c55e; }
+        .ar-pred-item.below .ar-pred-fill { background: #555; }
+        .ar-pred-pct { font-size: 0.7rem; color: #aaa; min-width: 52px; text-align: right; }
+        .ar-pred-item.cur .ar-pred-pct { color: #FBB03B; font-weight: 700; }
+        .ar-pred-bkt { font-size: 0.6rem; color: #999; min-width: 72px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: right; }
+        .ar-you-tag { display: inline-block; background: #FBB03B; color: #000; font-size: 0.5rem; padding: 1px 4px; border-radius: 2px; letter-spacing: 1px; font-weight: 700; vertical-align: middle; margin-left: 3px; }
+        .ar-pred-delta-up { color: #22c55e; font-size: 0.62rem; }
+        .ar-pred-delta-dn { color: #ef4444; font-size: 0.62rem; }
+
+        /* Insight */
+        .ar-insight { border-left: 2px solid rgba(251,176,59,0.4); padding: 10px 12px; margin-top: 12px; border-radius: 0 6px 6px 0; background: rgba(251,176,59,0.03); font-size: 0.72rem; color: #999; line-height: 1.75; }
+        .ar-insight strong { color: #FBB03B; }
+
+        /* Time stats row */
+        .ar-time-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 12px; }
+        .ar-time-card { background: #0d0d0d; border: 1px solid #141414; border-radius: 8px; padding: 12px 14px; text-align: center; }
+        .ar-time-val { font-family: 'DM Mono', monospace; font-size: 1.3rem; font-weight: 500; color: #fff; margin-bottom: 4px; }
+        .ar-time-lbl { font-size: 0.62rem; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+
+        /* Actions */
+        .ar-actions { display: flex; gap: 9px; padding-top: 2px; }
+        .ar-btn { flex: 1; padding: 15px; border-radius: 8px; border: none; font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; transition: all 0.18s; }
+        .ar-btn-primary { background: #FBB03B; color: #000; }
+        .ar-btn-primary:hover { background: #e9a02b; transform: translateY(-1px); }
+        .ar-btn-ghost { background: #111; color: #888; border: 1px solid #1e1e1e; }
+        .ar-btn-ghost:hover { background: #161616; color: #bbb; }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .game-area { flex-direction: column-reverse; }
+            .image-container { height: 200px; }
+            .ar-kpi-row { grid-template-columns: 1fr 1fr; }
+            .ar-cols { grid-template-columns: 1fr; }
+            .ar-time-row { grid-template-columns: 1fr 1fr; }
+            .ar-wrap { padding: 16px; }
+            .ar-kpi-val { font-size: 1.3rem; }
+            .ar-beat-big { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="skyBg"></div>
+<div class="card" id="mainCard">
+
+    <div class="header">
+        <div class="hdr-brand" id="hdrBrand">QUIZ</div>
+        <div class="hdr-title" id="menuTitle">Assessment</div>
+    </div>
+    <div class="progress-container" id="progWrapper">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="game-area" id="gameArea">
+        <div class="quiz-content">
+            <div id="startScreen">
+                <h3>The Ultimate Trivia Challenge</h3>
+                <p>Welcome. This 6-question evaluation consists of two phases. Round 1 features fixed global current affairs. Round 2 allows you to select your domain of expertise for one final high-stakes question.</p>
+                <p style="color:#888; margin-bottom: 20px;">Every metric is indexed. Performance is benchmarked down to the exact percentile tier against all prior participants globally.</p>
+                <div id="playCountBar" style="display:flex;align-items:center;gap:10px;margin-bottom:22px;background:#f4f5f7;border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 16px;">
+                    <div style="display:flex;flex-direction:column;">
+                        <span id="playCountNum" style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#1a1a1a;line-height:1;">—</span>
+                        <span style="font-size:0.65rem;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px;">Global Participants</span>
+                    </div>
+                    <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+                        <span style="font-size:0.6rem;background:#0d0d0d;color:#FBB03B;padding:2px 9px;border-radius:4px;letter-spacing:2px;font-family:'DM Mono',monospace;">● LIVE</span>
+                        <span style="font-size:0.6rem;color:#bbb;letter-spacing:0.5px;">updated in real-time</span>
+                    </div>
+                </div>
+                <button class="action-btn" onclick="startAssessment()">▶ &nbsp;Begin Round 1</button>
+            </div>
+
+            <div id="round2SetupScreen" class="hidden">
+                <h3 style="color:#FBB03B;">Round 1 Complete! 🎉</h3>
+                <p>Select your domain of expertise for the final question:</p>
+                <div class="topic-grid">
+                    <button class="topic-btn" onclick="startRound2('Sports')">🏅 Sports History</button>
+                    <button class="topic-btn" onclick="startRound2('Geopolitics')">📰 Geopolitics</button>
+                    <button class="topic-btn" onclick="startRound2('Indian Heritage')">🕌 Indian Heritage</button>
+                    <button class="topic-btn" onclick="startRound2('MODI')">🦩 M.O.D.I (Weird)</button>
+                    <button class="topic-btn" onclick="startRound2('10')">🔟 The Number 10</button>
+                </div>
+            </div>
+
+            <div id="quizScreen" class="hidden">
+                <h4 id="questionCounter" style="font-size:0.68rem; color:#aaa; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:10px; font-family:'DM Mono',monospace; font-weight:400;">Question 1 of 6</h4>
+                <h3 id="questionText">Loading...</h3>
+                <div class="options-grid" id="optionsContainer"></div>
+            </div>
+
+            <div id="round3IntroScreen" class="hidden">
+                <div class="r3-intro-wrap">
+                    <div class="r3-intro-badge">⚡ ROUND 3</div>
+                    <div class="r3-intro-title">RAPID FIRE</div>
+                    <p class="r3-intro-sub">4 questions · 8 seconds each<br><strong>Run out of time?</strong> Question skipped — no penalty.</p>
+                    <div class="r3-rules">
+                        <div class="r3-rule"><span style="color:#22c55e;">+10</span>Correct</div>
+                        <div class="r3-rule"><span style="color:#888;">0</span>Skipped</div>
+                        <div class="r3-rule"><span style="color:#ef4444;">−5</span>Wrong</div>
+                    </div>
+                    <button class="action-btn" onclick="startRound3()">⚡ &nbsp;Start Rapid Fire</button>
+                </div>
+            </div>
+
+            <div id="round3Screen" class="hidden">
+                <div class="r3-timer-wrap">
+                    <div class="r3-timer-top">
+                        <span class="r3-timer-label" id="r3Counter">Rapid Fire · Q1 of 4 ⚡</span>
+                        <span class="r3-timer-num" id="r3TimerNum">8</span>
+                    </div>
+                    <div class="r3-timer-track">
+                        <div class="r3-timer-fill" id="r3TimerFill" style="width:100%;background:#22c55e;"></div>
+                    </div>
+                </div>
+                <h3 id="r3QuestionText">Loading...</h3>
+                <div class="options-grid" id="r3OptionsContainer"></div>
+            </div>
+
+            <div id="resultScreen" class="hidden"></div>
+        </div>
+
+        <div class="image-container">
+            <img id="quizDisplayAsset" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230d0d0d'/%3E%3Crect x='80' y='200' width='55' height='400' fill='%23E74C3C' rx='3'/%3E%3Crect x='150' y='260' width='55' height='340' fill='%23FBB03B' rx='3'/%3E%3Crect x='220' y='150' width='55' height='450' fill='%233498DB' rx='3'/%3E%3Crect x='290' y='310' width='55' height='290' fill='%232ECC71' rx='3'/%3E%3Crect x='360' y='200' width='55' height='400' fill='%23E67E22' rx='3'/%3E%3Crect x='430' y='100' width='55' height='500' fill='%239B59B6' rx='3'/%3E%3C/svg%3E" alt="Quiz visual" />
+        </div>
+    </div>
+
+    <div id="analyticsReport" class="hidden">
+        <div class="ar-wrap" id="ar-content"></div>
+    </div>
+
+    <!-- ── Floating music dock: visible on every screen ── -->
+    <div id="musicDock">
+        <div id="genreRow" class="hidden">
+            <button class="genre-pill" data-genre="classical" onclick="selectGenre('classical')">🎻 Classical</button>
+            <button class="genre-pill" data-genre="hiphop"   onclick="selectGenre('hiphop')">🎤 Hip-Hop</button>
+            <button class="genre-pill" data-genre="jpop"     onclick="selectGenre('jpop')">🌸 J-Pop</button>
+            <button class="genre-pill" data-genre="rock"     onclick="selectGenre('rock')">🎸 Rock</button>
+            <button class="genre-pill" data-genre="lofi"     onclick="selectGenre('lofi')">☕ Lo-Fi</button>
+        </div>
+        <button id="musicToggle" onclick="toggleMusicMenu()" title="Background music">🎶</button>
+    </div>
+
+    <div class="modal-overlay" id="iqModal">
+        <div class="modal-content">
+            <h3>Cognitive Brackets (Out of 6)</h3>
+            <ul class="iq-list">
+                <li><span class="score-badge">11 – 12</span><span><strong>Genius Spectrum</strong> (IQ 135+)</span></li>
+                <li><span class="score-badge">9 – 10</span><span><strong>High Superior</strong> (IQ 120–134)</span></li>
+                <li><span class="score-badge">6 – 8</span><span><strong>Standard Mean</strong> (IQ 95–119)</span></li>
+                <li><span class="score-badge">4 – 5</span><span><strong>Marginal Threshold</strong> (IQ 80–94)</span></li>
+                <li><span class="score-badge">0 – 3</span><span><strong>Atypical Processing</strong> (IQ &lt;80)</span></li>
+            </ul>
+            <button class="action-btn" style="margin-top:4px;" onclick="toggleModal(false)">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   FIREBASE REALTIME DATABASE — REST API
+   Percentile = score (primary) + time (secondary tiebreaker)
+========================================================= */
+(function(){
+    const RTDB = 'https://survival-quiz1-default-rtdb.firebaseio.com';
+
+    window.fbPrewarm = () => {
+        fetch(`${RTDB}/score_dist.json`).catch(()=>{});
+    };
+
+    window.processMetricsPipeline = async (name, rawScore, elapsed) => {
+        const sc  = Math.max(0, Math.min(12, Math.round(Number(rawScore)||0)));
+        const nm  = String(name||'').trim().replace(/[<>"']/g,'').slice(0,40)||'Anonymous';
+        const sec = Math.max(elapsed||1, 1); // guard against 0
+
+        console.log('[RTDB] score:', sc, '| time:', sec+'s');
+
+        // ── Log attempt (fire & forget) ──────────────────────────
+        fetch(`${RTDB}/quiz_attempts.json`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ username: nm, score: sc, elapsed: sec, ts: Date.now() })
+        }).catch(e => console.warn('[RTDB] attempt log skipped:', e));
+
+        // ── Atomic increments: score count + time sum per tier ───
+        const patchRes = await fetch(`${RTDB}/score_dist.json`, {
+            method: 'PATCH', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+                [`s${sc}`]:    { '.sv': { 'increment': 1   } },
+                [`tsum${sc}`]: { '.sv': { 'increment': sec } }, // time sum for tier
+                'total':       { '.sv': { 'increment': 1   } }
+            })
+        });
+        if(!patchRes.ok){ const e=await patchRes.text(); throw new Error(`HTTP ${patchRes.status}: ${e}`); }
+
+        // ── Read distribution ────────────────────────────────────
+        const d = await (await fetch(`${RTDB}/score_dist.json`)).json() || {};
+        console.log('[RTDB] dist:', JSON.stringify(d));
+
+        const total = Math.max(Number(d.total)||1, 1);
+
+        // Players with strictly lower score (score now 0-12)
+        let strictlyBelow = 0;
+        for(let i=0; i<sc; i++) strictlyBelow += Number(d[`s${i}`]||0);
+
+        // Within same-score tier, rank by time (faster = better)
+        const sameCount    = Number(d[`s${sc}`]||1);
+        const avgTime      = Number(d[`tsum${sc}`]||sec) / sameCount;
+        // timeRank: 0 (slowest) → 1 (fastest)
+        const timeRank = sec <= avgTime
+            ? 0.5 + 0.5 * (1 - sec / Math.max(avgTime, 1))   // faster than avg
+            : 0.5 * Math.max(avgTime, 1) / sec;               // slower than avg
+
+        const allBelow   = strictlyBelow + (sameCount - 1) * Math.max(0, Math.min(1, timeRank));
+        const rawPct     = Math.max(1, Math.min(99, Math.round(allBelow / total * 100)));
+
+        // Perfect score → always top percentile (no blending needed)
+        if(sc === 12) return { percentile: 99, dist: d };
+
+        // ── Blend live data with static prior ───────────────────
+        // With few players, live percentile is very noisy.
+        // Static PCT_EST acts as a Bayesian prior; live data takes over gradually.
+        // At 100+ players the live result is fully trusted.
+        const staticPrior = PCT_EST[Math.min(sc, 12)];
+        const blendFactor = Math.min(1, total / 100); // 0 = pure static, 1 = pure live
+        const percentile  = Math.max(1, Math.min(99,
+            Math.round(staticPrior * (1 - blendFactor) + rawPct * blendFactor)
+        ));
+
+        console.log('[RTDB] percentile:', percentile, '| raw:', rawPct, '| static:', staticPrior, '| blend:', blendFactor.toFixed(2), '| total:', total);
+        return { percentile, dist: d };
+    };
+})();
+</script>
+
+<script>
+const TOTAL = 12; // 5(R1) + 3(R2) + 4(R3)
+const PCT_EST = [1,2,5,10,18,28,42,58,70,80,88,94,99]; // static percentile estimates for 0–12 correct
+let qIdx=0, score=0, selCat="", curAns="";
+let startTime=null, qResults=[];
+let r2QIdx=0, r3QIdx=0, totalPoints=0, currentRound=1, r3Interval=null;
+const PTS = { r1c:10, r1w:-5, r2c:20, r2w:-5, r3c:10, r3s:0, r3w:-5 };
+
+const R1 = [
+    { label:"DART",  q:"In 2022, NASA successfully altered the orbit of an asteroid by crashing a spacecraft into it. What was the mission called?", opts:["Project APOLLO","Mission ARTEMIS","The DART Mission","Voyager 3"], ans:"The DART Mission", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230B0C10'/%3E%3Ccircle cx='400' cy='300' r='120' fill='%23666'/%3E%3Ccircle cx='380' cy='280' r='20' fill='%23444'/%3E%3Ccircle cx='440' cy='340' r='30' fill='%23555'/%3E%3Cpath d='M100 600 L300 400' stroke='%23FBB03B' stroke-width='8' stroke-dasharray='10,10'/%3E%3Ccircle cx='320' cy='380' r='40' fill='%23F05A28'/%3E%3C/svg%3E" },
+    { label:"MOON",  q:"Which country made history in 2023 by becoming the first to successfully land a spacecraft near the Moon's unexplored south pole?", opts:["United States","China","India","Russia"], ans:"India", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%231A1A24'/%3E%3Cpath d='M0 600 Q300 500 600 650 L600 800 L0 800 Z' fill='%23DDD'/%3E%3Crect x='250' y='450' width='100' height='100' fill='%23FBB03B'/%3E%3Crect x='220' y='550' width='160' height='20' fill='%23555'/%3E%3Ccircle cx='240' cy='580' r='15' fill='%23333'/%3E%3Ccircle cx='360' cy='580' r='15' fill='%23333'/%3E%3C/svg%3E" },
+    { label:"AI",    q:"What is the name of the parent company that developed the revolutionary AI model ChatGPT?", opts:["DeepMind","OpenAI","Anthropic","Meta AI"], ans:"OpenAI", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%2310A37F'/%3E%3Ccircle cx='300' cy='400' r='150' fill='none' stroke='%23FFF' stroke-width='20'/%3E%3Ccircle cx='300' cy='400' r='60' fill='%23FFF'/%3E%3Cpath d='M200 300 L150 250 M400 300 L450 250 M200 500 L150 550 M400 500 L450 550' stroke='%23FFF' stroke-width='15'/%3E%3C/svg%3E" },
+    { label:"PARIS", q:"The 2024 Summer Olympics officially debuted which unique, urban activity as a competitive medal sport?", opts:["Parkour","Skateboarding","Breaking (Breakdancing)","Drone Racing"], ans:"Breaking (Breakdancing)", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23FF5A5F'/%3E%3Cpolygon points='300,200 450,400 300,600 150,400' fill='%230B0C10'/%3E%3Ccircle cx='300' cy='400' r='80' fill='%23FBB03B'/%3E%3Ccircle cx='300' cy='300' r='40' fill='%23FFF'/%3E%3C/svg%3E" },
+    { label:"EARTH", q:"What is the single largest living structure on Planet Earth, so massive it is clearly visible from space?", opts:["The Amazon Rainforest","The Great Barrier Reef","The Great Wall of China","The Sahara Desert"], ans:"The Great Barrier Reef", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23006994'/%3E%3Cpath d='M0 800 Q150 600 300 800 T600 800' fill='%23FF7F50'/%3E%3Cpath d='M100 800 Q200 500 400 800' fill='%23FF1493'/%3E%3Ccircle cx='450' cy='200' r='50' fill='%23FFA500' opacity='0.5'/%3E%3C/svg%3E" }
+];
+
+const R2 = {
+    Sports: [
+        { label:"TENNIS", q:"In 2010, Wimbledon hosted the longest competitive tennis match in history. How long did these athletes battle it out on court?", opts:["8 hours 11 mins","11 hours 5 mins","14 hours 20 mins","18 hours"], ans:"11 hours 5 mins", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%232E8B57'/%3E%3Cline x1='300' y1='0' x2='300' y2='800' stroke='%23FFF' stroke-width='10'/%3E%3Ccircle cx='450' cy='400' r='40' fill='%23CCFF00'/%3E%3C/svg%3E" },
+        { label:"GOLF",   q:"Golf is the only sport ever played on the Moon. Which Apollo astronaut hit a golf shot there in 1971?", opts:["Neil Armstrong","Buzz Aldrin","Alan Shepard","Michael Collins"], ans:"Alan Shepard", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230B0C1A'/%3E%3Ccircle cx='300' cy='380' r='130' fill='%23888'/%3E%3Ccircle cx='260' cy='340' r='22' fill='%23666'/%3E%3Ccircle cx='340' cy='400' r='18' fill='%23777'/%3E%3Ccircle cx='160' cy='120' r='3' fill='%23fff'/%3E%3Ccircle cx='450' cy='80' r='2' fill='%23fff'/%3E%3Ccircle cx='80' cy='300' r='2' fill='%23fff'/%3E%3C/svg%3E" },
+        { label:"TORCH",  q:"The Olympic torch relay feels like an ancient tradition — but when was it actually invented?", opts:["1896 Athens","1920 Antwerp","1936 Berlin","1948 London"], ans:"1936 Berlin", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%231a1a1a'/%3E%3Crect x='270' y='400' width='60' height='300' rx='8' fill='%23888'/%3E%3Cellipse cx='300' cy='380' rx='45' ry='60' fill='%23666'/%3E%3Cellipse cx='300' cy='220' rx='60' ry='80' fill='%23FF6600' opacity='0.9'/%3E%3Cellipse cx='300' cy='170' rx='35' ry='50' fill='%23FBB03B'/%3E%3C/svg%3E" }
+    ],
+    Geopolitics: [
+        { label:"GEO",    q:"Thanks to its numerous overseas territories, which country spans the most time zones (12) in the world?", opts:["Russia","United States","France","China"], ans:"France", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%231E3D59'/%3E%3Ccircle cx='300' cy='400' r='250' fill='%2343B0F1'/%3E%3Cpath d='M100 400 Q200 200 300 400 T500 400' fill='%23E8EAE6'/%3E%3C/svg%3E" },
+        { label:"CHINA",  q:"China uses ONE time zone across its entire territory. In westernmost Xinjiang, the sun can rise as late as…?", opts:["8 AM","9:30 AM","10:30 AM","12 PM"], ans:"10:30 AM", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23DE2910'/%3E%3Ccircle cx='150' cy='180' r='80' fill='%23FFDE00'/%3E%3Ccircle cx='250' cy='100' r='25' fill='%23FFDE00'/%3E%3Ccircle cx='310' cy='150' r='25' fill='%23FFDE00'/%3E%3Ccircle cx='310' cy='230' r='25' fill='%23FFDE00'/%3E%3Ccircle cx='260' cy='290' r='25' fill='%23FFDE00'/%3E%3C/svg%3E" },
+        { label:"SWEDEN", q:"Sweden has represented North Korea's diplomatic interests in which country since 1995?", opts:["United States","United Kingdom","Japan","Australia"], ans:"United States", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23006AA7'/%3E%3Crect x='0' y='320' width='600' height='160' fill='%23FECC02'/%3E%3Crect x='200' y='0' width='160' height='800' fill='%23FECC02'/%3E%3C/svg%3E" }
+    ],
+    'Indian Heritage': [
+        { label:"NALANDA",q:"Which ancient Indian institution, founded in the 5th century, is widely considered one of the world's first residential universities?", opts:["Taxila","Nalanda","Vikramashila","Vallabhi"], ans:"Nalanda", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23D2B48C'/%3E%3Cpolygon points='300,200 500,700 100,700' fill='%23A0522D'/%3E%3Crect x='250' y='500' width='100' height='200' fill='%238B4513'/%3E%3C/svg%3E" },
+        { label:"SNAKES", q:"Snakes and Ladders was invented in India as a moral teaching game. What did the snakes represent?", opts:["Bad luck","Vices and sins","The monsoon","Enemies of the king"], ans:"Vices and sins", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%234CAF50'/%3E%3Crect x='100' y='100' width='400' height='600' rx='10' fill='%23fff'/%3E%3Cpath d='M200 500 Q300 300 400 500' fill='none' stroke='%23e53935' stroke-width='20' stroke-linecap='round'/%3E%3Cpath d='M200 300 Q300 150 400 300' fill='none' stroke='%231565C0' stroke-width='12' stroke-linecap='round'/%3E%3C/svg%3E" },
+        { label:"KUMBH",  q:"The Kumbh Mela is the largest human gathering on Earth. How often does the Maha Kumbh occur?", opts:["Every 4 years","Every 7 years","Every 12 years","Every 25 years"], ans:"Every 12 years", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23FF6F00'/%3E%3Ccircle cx='300' cy='350' r='150' fill='%23FFF3E0' opacity='0.3'/%3E%3Ccircle cx='300' cy='350' r='80' fill='%23FFF8E1' opacity='0.5'/%3E%3Cpath d='M0 750 Q300 580 600 750 L600 800 L0 800Z' fill='%231565C0' opacity='0.7'/%3E%3C/svg%3E" }
+    ],
+    MODI: [
+        { label:"HOOT",   q:"M.O.D.I = Mystical Owls Doing Internet. What happens if you type 'Hoot' into the search bar?", opts:["Your mouse flies away","Screen rotates 360 degrees","Dark mode turns Night Vision","A virtual mouse is eaten"], ans:"Dark mode turns Night Vision", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%232C3E50'/%3E%3Ccircle cx='300' cy='400' r='150' fill='%238E44AD'/%3E%3Ccircle cx='240' cy='370' r='42' fill='%23FFF'/%3E%3Ccircle cx='360' cy='370' r='42' fill='%23FFF'/%3E%3Ccircle cx='240' cy='374' r='18' fill='%23222'/%3E%3Ccircle cx='360' cy='374' r='18' fill='%23222'/%3E%3C/svg%3E" },
+        { label:"OWLS",   q:"Per M.O.D.I protocol, pressing Ctrl+Z three times on an owl's computer does what?", opts:["Undoes the last hoot","Opens Nest browser","Summons a parliament of owls","Restarts the moon"], ans:"Summons a parliament of owls", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%231a1035'/%3E%3Ccircle cx='200' cy='350' r='70' fill='%238E44AD'/%3E%3Ccircle cx='300' cy='300' r='90' fill='%239B59B6'/%3E%3Ccircle cx='400' cy='350' r='70' fill='%238E44AD'/%3E%3Ccircle cx='175' cy='330' r='18' fill='%23FFF'/%3E%3Ccircle cx='225' cy='330' r='18' fill='%23FFF'/%3E%3Ccircle cx='375' cy='330' r='18' fill='%23FFF'/%3E%3Ccircle cx='425' cy='330' r='18' fill='%23FFF'/%3E%3C/svg%3E" },
+        { label:"BINARY", q:"The M.O.D.I Level 3 certification requires passing which unusual test?", opts:["Typing 100 WPM with talons","Solving CAPTCHA blindfolded","Hooting in binary code","Debugging a mouse"], ans:"Hooting in binary code", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230d0d0d'/%3E%3Ccircle cx='300' cy='580' r='80' fill='%238E44AD' opacity='0.4'/%3E%3Ccircle cx='270' cy='565' r='20' fill='%23FFF'/%3E%3Ccircle cx='330' cy='565' r='20' fill='%23FFF'/%3E%3C/svg%3E" }
+    ],
+    '10': [
+        { label:"MARADO", q:"Which legendary footballer wore #10 and scored the controversial Hand of God goal in 1986?", opts:["Pele","Diego Maradona","Lionel Messi","Zinedine Zidane"], ans:"Diego Maradona", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%2374ACDF'/%3E%3Crect x='150' y='200' width='300' height='400' fill='%23FFF'/%3E%3Ctext x='300' y='450' font-family='Arial' font-size='150' font-weight='bold' fill='%23000' text-anchor='middle'%3E10%3C/text%3E%3C/svg%3E" },
+        { label:"NEON",   q:"10 is the atomic number of Neon. What colour does pure neon gas actually glow?", opts:["Blue","White","Green","Red-orange"], ans:"Red-orange", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230a0a0a'/%3E%3Crect x='80' y='200' width='440' height='100' rx='50' fill='none' stroke='%23FF4500' stroke-width='14'/%3E%3Ctext x='300' y='290' font-family='Arial' font-size='50' fill='%23FF4500' text-anchor='middle'%3ENEON%3C/text%3E%3C/svg%3E" },
+        { label:"DECAT",  q:"The Olympic Decathlon has 10 events. Which always comes LAST?", opts:["110m hurdles","High jump","Pole vault","1500m run"], ans:"1500m run", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%231a1a1a'/%3E%3Ccircle cx='300' cy='380' r='200' fill='none' stroke='%23FBB03B' stroke-width='20'/%3E%3Ctext x='300' y='410' font-family='Arial' font-size='120' font-weight='bold' fill='%23FBB03B' text-anchor='middle'%3E10%3C/text%3E%3C/svg%3E" }
+    ]
+};
+
+const R3 = [
+    { label:"SATURN",  q:"Which planet has the most moons in our solar system as of 2023?", opts:["Jupiter","Saturn","Uranus","Neptune"], ans:"Saturn", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23060818'/%3E%3Ccircle cx='100' cy='100' r='2' fill='%23fff'/%3E%3Ccircle cx='450' cy='80' r='2' fill='%23fff'/%3E%3Ccircle cx='300' cy='400' r='120' fill='%23C8A660'/%3E%3Cellipse cx='300' cy='400' rx='220' ry='55' fill='none' stroke='%23D4B896' stroke-width='25' opacity='0.7'/%3E%3C/svg%3E" },
+    { label:"SHARK",   q:"Sharks have zero bones — their skeleton is made entirely of what?", opts:["Ivory","Calcium","Cartilage","Rubber"], ans:"Cartilage", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23004080'/%3E%3Cpath d='M0 500 Q150 470 300 500 T600 500 L600 800 L0 800 Z' fill='%23003060'/%3E%3Cellipse cx='300' cy='580' rx='200' ry='70' fill='%23607080'/%3E%3Cpolygon points='300,280 260,480 340,480' fill='%23607080'/%3E%3C/svg%3E" },
+    { label:"FLAMIN",  q:"What is a group of flamingos officially called?", opts:["A flock","A colony","A flamboyance","A flamingle"], ans:"A flamboyance", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23FF6B9D'/%3E%3Cellipse cx='300' cy='430' rx='90' ry='130' fill='%23FF4081'/%3E%3Ccircle cx='295' cy='140' r='38' fill='%23FF4081'/%3E%3Cline x1='265' y1='560' x2='240' y2='730' stroke='%23FF4081' stroke-width='12' stroke-linecap='round'/%3E%3Cline x1='335' y1='560' x2='360' y2='730' stroke='%23FF4081' stroke-width='12' stroke-linecap='round'/%3E%3C/svg%3E" },
+    { label:"FREDDIE", q:"Freddie Mercury was born Farrokh Bulsara. In which country was he born?", opts:["India","Pakistan","Zanzibar Tanzania","Iran"], ans:"Zanzibar Tanzania", img:"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%231A0A2E'/%3E%3Cline x1='300' y1='220' x2='300' y2='720' stroke='%23888' stroke-width='10'/%3E%3Cellipse cx='300' cy='215' rx='45' ry='65' fill='%23666'/%3E%3Ccircle cx='300' cy='215' r='30' fill='%23444'/%3E%3Ccircle cx='80' cy='150' r='3' fill='%23FFF'/%3E%3Ccircle cx='500' cy='400' r='2' fill='%23FFF'/%3E%3C/svg%3E" }
+];
+
+/* =========================================================
+   MATH
+========================================================= */
+const normalPDF = z => (1/Math.sqrt(2*Math.PI)) * Math.exp(-0.5*z*z);
+
+function probit(p) {
+    p = Math.max(0.0001, Math.min(0.9999, p));
+    const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+    const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+    const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+    const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+    const pL=0.02425, pH=1-pL;
+    let q,r;
+    if(p<pL){ q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+    else if(p<=pH){ q=p-0.5; r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+    else{ q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+}
+
+/* =========================================================
+   BELL CURVE SVG
+========================================================= */
+function buildBellSVG(pct) {
+    const W=720, H=210, mL=12, mR=12, mT=40, mB=36;
+    const cW=W-mL-mR, cH=H-mT-mB, baseY=H-mB;
+    const zMin=-3.5, zMax=3.5, peak=normalPDF(0);
+    const mZ = z => mL + ((z-zMin)/(zMax-zMin))*cW;
+    const mP = p => baseY - (p/peak)*cH;
+    const uZ = probit(Math.max(1,Math.min(99,pct))/100);
+    const uX = mZ(uZ), uY = mP(normalPDF(uZ));
+
+    const N=280, pts=[];
+    for(let i=0;i<=N;i++){
+        const z=zMin+(i/N)*(zMax-zMin);
+        pts.push([mZ(z),mP(normalPDF(z))]);
+    }
+    const curvePath = pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+
+    const cutIdx = pts.findIndex(([x])=>x>uX+0.5);
+    const shadePts = pts.slice(0, cutIdx>0?cutIdx:pts.length);
+    const shadePath = `M${mZ(zMin).toFixed(1)},${baseY} `
+        + shadePts.map(([x,y])=>`L${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+        + ` L${uX.toFixed(1)},${baseY} Z`;
+
+    const sigmas = [[-2,'−2σ'],[0,'μ'],[2,'+2σ']];
+    const sigTicks = sigmas.map(([sv,sl])=>{
+        const sx=mZ(sv);
+        return `<line x1="${sx.toFixed(1)}" y1="${baseY}" x2="${sx.toFixed(1)}" y2="${baseY+5}" stroke="#444" stroke-width="1"/>
+                <text x="${sx.toFixed(1)}" y="${baseY+16}" font-family="DM Mono,monospace" font-size="8.5" fill="#888" text-anchor="middle">${sl}</text>`;
+    }).join('');
+
+    const pctTicks = [[16,'16th'],[50,'50th'],[84,'84th']].map(([pv,pl])=>{
+        const px=mZ(probit(pv/100));
+        return `<line x1="${px.toFixed(1)}" y1="${baseY}" x2="${px.toFixed(1)}" y2="${baseY+4}" stroke="#444" stroke-width="1" stroke-dasharray="2,2"/>
+                <text x="${px.toFixed(1)}" y="${baseY+25}" font-family="DM Mono,monospace" font-size="8.5" fill="#888" text-anchor="middle">${pl}</text>`;
+    }).join('');
+
+    const lbW=72, lbX=Math.max(mL+lbW/2+2, Math.min(W-mR-lbW/2-2, uX));
+
+    return `<svg class="ar-bell-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" data-pct="${pct}">
+        <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#FBB03B" stop-opacity="0.04"/>
+                <stop offset="100%" stop-color="#FBB03B" stop-opacity="0.28"/>
+            </linearGradient>
+        </defs>
+        <line x1="${mL}" y1="${baseY}" x2="${W-mR}" y2="${baseY}" stroke="#2a2a2a" stroke-width="1"/>
+        <path class="ar-bell-shade" d="${shadePath}" fill="url(#sg)"/>
+        <path class="ar-bell-curve" d="${curvePath}" fill="none" stroke="#FBB03B" stroke-width="2" stroke-dasharray="2000" stroke-dashoffset="0"/>
+        ${sigTicks}
+        ${pctTicks}
+        <line x1="${uX.toFixed(1)}" y1="${mT+2}" x2="${uX.toFixed(1)}" y2="${baseY}" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <g id="bellMarker" opacity="0">
+            <circle cx="${uX.toFixed(1)}" cy="${uY.toFixed(1)}" r="5.5" fill="#FBB03B" stroke="#070707" stroke-width="2"/>
+            <circle cx="${uX.toFixed(1)}" cy="${uY.toFixed(1)}" r="10" fill="none" stroke="#FBB03B" stroke-width="1" opacity="0.35"/>
+        </g>
+        <rect x="${(lbX-lbW/2).toFixed(1)}" y="${mT-18}" width="${lbW}" height="16" rx="3" fill="#FBB03B"/>
+        <text x="${lbX.toFixed(1)}" y="${mT-6}" font-family="DM Mono,monospace" font-size="8.5" fill="#000" font-weight="600" text-anchor="middle" letter-spacing="0.5">YOU · ${pct}th PCT</text>
+    </svg>`;
+}
+
+/* =========================================================
+   CUMULATIVE SCORE PULSE CHART
+========================================================= */
+function buildPulseSVG(results) {
+    if(!results.length) return '';
+    const W=280, H=62, pad=14;
+    let cum=0;
+    const pts = results.map((r,i)=>{ if(r.result==='correct') cum++; return { i, v:cum }; });
+    const maxV = TOTAL; // scale y-axis over full 12 questions
+    const xS = (W-2*pad)/Math.max(1,pts.length-1);
+    const mX = i => pad+i*xS;
+    const mY = v => H-pad-(v/maxV)*(H-2*pad);
+    const line = pts.map((p,i)=>`${i?'L':'M'}${mX(p.i).toFixed(1)},${mY(p.v).toFixed(1)}`).join(' ');
+    const area = line+` L${mX(pts.length-1).toFixed(1)},${H-pad} L${pad},${H-pad} Z`;
+    const dots = pts.map(p=>`<circle cx="${mX(p.i).toFixed(1)}" cy="${mY(p.v).toFixed(1)}" r="3" fill="${results[p.i].result==='correct'?'#22c55e':'#ef4444'}" stroke="#0d0d0d" stroke-width="1.5"/>`).join('');
+    const xlbls = pts.map(p=>`<text x="${mX(p.i).toFixed(1)}" y="${H+1}" font-family="DM Mono,monospace" font-size="7" fill="#888" text-anchor="middle">Q${p.i+1}</text>`).join('');
+    return `<svg class="ar-pulse-svg" viewBox="0 0 ${W} ${H+8}" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FBB03B" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="#FBB03B" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path d="${area}" fill="url(#pg)"/>
+        <path d="${line}" fill="none" stroke="#FBB03B" stroke-width="1.5" stroke-linejoin="round"/>
+        ${dots}${xlbls}
+    </svg>`;
+}
+
+/* =========================================================
+   MAIN ANALYTICS RENDERER
+========================================================= */
+function renderAnalytics(sc, pct, offline, results, elapsed, name, pts) {
+    const attempted = results.filter(r=>r.result!=='skipped').length;
+    const correct   = results.filter(r=>r.result==='correct').length;
+    const acc       = attempted>0 ? ((correct/attempted)*100).toFixed(1) : '0.0';
+    const ptsDisplay = (pts>=0?'+':'')+pts;
+    const BRACKETS = ['Atypical Processing','Atypical Processing','Atypical Processing','Atypical Processing','Marginal Threshold','Marginal Threshold','Standard Mean','Standard Mean','Standard Mean','High Superior','High Superior','Genius Spectrum','Genius Spectrum'];
+    const IQ_RANGES = ['IQ <80','IQ <80','IQ <80','IQ <80','IQ 80–94','IQ 80–94','IQ 95–119','IQ 95–119','IQ 95–119','IQ 120–134','IQ 120–134','IQ 135+','IQ 135+'];
+
+    const BRAC_COL  = ['#ef4444','#ef4444','#ef4444','#ef4444','#f97316','#f97316','#3b82f6','#3b82f6','#3b82f6','#22c55e','#22c55e','#a855f7','#a855f7'];
+    const bracket = BRACKETS[Math.min(sc,12)], bCol = BRAC_COL[Math.min(sc,12)], iqRange = IQ_RANGES[Math.min(sc,12)];
+
+    const mins = Math.floor(elapsed/60), secs = elapsed%60;
+    const timeStr = mins>0?`${mins}m ${secs}s`:`${secs}s`;
+    const avgTime = elapsed>0?(elapsed/TOTAL).toFixed(1)+'s':'—';
+    const beatPct = Math.max(0, pct-1);
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+    const timeStamp = now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+    const trailItems = results.map((r,i)=>{
+        const cls  = r.result==='correct'?'pass': r.result==='wrong'?'fail':'skip';
+        const icon = r.result==='correct'?'✓':  r.result==='wrong'?'✗':'—';
+        return `<div class="ar-trail-item">
+            <div class="ar-bubble ${cls}">${icon}</div>
+            <div class="ar-q-lbl">Q${i+1}</div>
+            <div class="ar-q-cat">${r.label||''}</div>
+        </div>`;
+    });
+    // Insert dividers between rounds
+    const r2Start = 5, r3Start = 8;
+    if(results.length > r3Start) trailItems.splice(r3Start + 1, 0, `<div class="ar-trail-divider"></div>`);
+    if(results.length > r2Start) trailItems.splice(r2Start, 0, `<div class="ar-trail-divider"></div>`);
+
+    const sbar = results.map(r=>`<div class="ar-sbar-seg ${r.result==='correct'?'pass':r.result==='wrong'?'fail':'skip'}"></div>`).join('');
+
+    const BRAC_SHORT = ['Atypical','Atypical','Atypical','Atypical','Marginal','Marginal','Std. Mean','Std. Mean','Std. Mean','Hi. Superior','Hi. Superior','Genius','Genius'];
+
+    const cands = new Set();
+    for(let d=2; cands.size<5&&d>=-10; d--){
+        cands.add(Math.max(0,Math.min(12,sc+d)));
+    }
+    const rowScores = [...cands].sort((a,b)=>b-a);
+    const predRows = rowScores.map(s=>{
+        const p = (s===sc) ? pct : PCT_EST[s];
+        const isCur = s===sc, isAbove = s>sc;
+        const cls = isCur?'cur':(isAbove?'above':'below');
+        const delta = p - pct;
+        let deltaBadge = '';
+        if(!isCur && delta>0) deltaBadge=`<span class="ar-pred-delta-up">+${delta}</span>`;
+        else if(!isCur && delta<0) deltaBadge=`<span class="ar-pred-delta-dn">${delta}</span>`;
+        return `<div class="ar-pred-item ${cls}">
+            <div class="ar-pred-score">${s}/12${isCur?`<span class="ar-you-tag">YOU</span>`:''}</div>
+            <div class="ar-pred-bar"><div class="ar-pred-fill" style="width:0%" data-w="${p}"></div></div>
+            <div class="ar-pred-pct">${p}th ${deltaBadge}</div>
+            <div class="ar-pred-bkt">${BRAC_SHORT[Math.min(s,12)]}</div>
+        </div>`;
+    }).join('');
+
+    // Next bracket threshold lookup
+    const BRAC_THRESH = [4, 6, 9, 11]; // min score for Marginal, Standard, High Superior, Genius
+    const nextThresh  = BRAC_THRESH.find(t => t > sc) ?? 12;
+    const needed      = nextThresh - sc;
+    const nextBracket = BRACKETS[Math.min(nextThresh, 12)];
+    const nextPct     = PCT_EST[Math.min(nextThresh, 12)];
+
+    let insight='';
+    if(sc>=11) insight=`<strong>Near-perfect performance — ${correct} correct from 12.</strong> You placed in the top tier globally across all three rounds. An exceptional result.`;
+    else if(sc>=9) insight=`<strong>${needed} question${needed>1?'s':''} away from Genius Spectrum.</strong> Scoring ${nextThresh}/12 projects you to ~${nextPct}th percentile — the very top of the distribution.`;
+    else if(sc>=4) insight=`<strong>${needed} question${needed>1?'s':''} away from ${nextBracket}.</strong> Scoring ${nextThresh}/12 projects you to ~${nextPct}th percentile — crossing into the <strong>${nextBracket}</strong> bracket.`;
+    else insight=`Scoring just one more correctly moves you to ~${PCT_EST[Math.min(sc+1,12)]}th percentile. Focus on weak areas across R1, R2 and the Rapid Fire round to shift your bracket significantly.`;
+
+    const bellSVG  = buildBellSVG(pct);
+    const pulseSVG = buildPulseSVG(results);
+    const badgeHTML = offline === 'pending'
+        ? `<span class="ar-badge ar-badge-offline" id="fb-badge">● Syncing...</span>`
+        : offline
+            ? `<span class="ar-badge ar-badge-offline" id="fb-badge">Simulated Data</span>`
+            : `<span class="ar-badge ar-badge-live" id="fb-badge">Live Global Data</span>`;
+
+    document.getElementById('hdrBrand').textContent = 'RESULTS';
+    document.getElementById('menuTitle').textContent = 'Analytics Report';
+    document.getElementById('ar-content').innerHTML = `
+        <div class="ar-hdr">
+            <div>
+                <div class="ar-eyebrow">Performance Analytics Report · Quiz</div>
+                <div class="ar-name">${name.toUpperCase()}</div>
+            </div>
+            <div class="ar-meta">
+                <em>${dateStr}</em><br>
+                <em>${timeStamp}</em><br>
+                ${badgeHTML}
+            </div>
+        </div>
+
+        <div class="ar-kpi-row">
+            <div class="ar-kpi">
+                <div class="ar-kpi-bar" style="background:#60a5fa;"></div>
+                <div class="ar-kpi-icon">⚡</div>
+                <div class="ar-kpi-val" style="color:#60a5fa;">${ptsDisplay}<span style="font-size:0.85rem;color:#555;"> pts</span></div>
+                <div class="ar-kpi-lbl">Total Points</div>
+            </div>
+            <div class="ar-kpi">
+                <div class="ar-kpi-bar" style="background:#4ade80;"></div>
+                <div class="ar-kpi-icon">🎯</div>
+                <div class="ar-kpi-val" style="color:#4ade80;">${correct}<span style="font-size:0.85rem;color:#555;"> / ${attempted}</span></div>
+                <div class="ar-kpi-lbl">Correct / Attempted</div>
+            </div>
+            <div class="ar-kpi">
+                <div class="ar-kpi-bar" style="background:#FBB03B;"></div>
+                <div class="ar-kpi-icon">🌍</div>
+                <div class="ar-kpi-val" style="color:#FBB03B;">${pct}<span style="font-size:0.85rem;color:#555;">th</span></div>
+                <div class="ar-kpi-lbl">Global Percentile</div>
+            </div>
+            <div class="ar-kpi">
+                <div class="ar-kpi-bar" style="background:${bCol};"></div>
+                <div class="ar-kpi-icon">🧠</div>
+                <div class="ar-kpi-val" style="color:${bCol};">${bracket}</div>
+                <div class="ar-kpi-lbl">Cognitive Bracket · ${iqRange}</div>
+            </div>
+        </div>
+
+        <div class="ar-time-row">
+            <div class="ar-time-card">
+                <div class="ar-time-val">${elapsed>0?timeStr:'—'}</div>
+                <div class="ar-time-lbl">Total Time</div>
+            </div>
+            <div class="ar-time-card">
+                <div class="ar-time-val">${elapsed>0?avgTime:'—'}</div>
+                <div class="ar-time-lbl">Avg / Question</div>
+            </div>
+            <div class="ar-time-card">
+                <div class="ar-time-val">${selCat||'—'}</div>
+                <div class="ar-time-lbl">R2 Domain Selected</div>
+            </div>
+        </div>
+
+        <!-- Bell curve — sits in normal page flow, no sticky -->
+        <div class="ar-box" id="ar-bell-wrap">
+            <div class="ar-box-ttl">Global Score Distribution · Normal Curve</div>
+            ${bellSVG}
+            <div class="ar-beat">
+                <div class="ar-beat-big">${beatPct}%</div>
+                <div class="ar-beat-sub">
+                    <strong>of all participants scored below you</strong><br>
+                    Your result sits at the <strong>${pct}th percentile</strong> of the global distribution.
+                    Shaded region = area you outperform · Marker = your exact position on the curve.
+                </div>
+            </div>
+        </div>
+
+        <div class="ar-cols">
+            <div class="ar-box">
+                <div class="ar-box-ttl">Question-by-Question Trail</div>
+                <div class="ar-trail">${trailItems.join('')}</div>
+                <div class="ar-round-row">
+                    <span>R1 (Q1–Q5)</span>
+                    <span>R2 (Q6–Q8)</span>
+                    <span>R3 ⚡</span>
+                </div>
+                <div class="ar-sbar">${sbar}</div>
+                <div class="ar-sbar-lbl">
+                    <span>0%</span>
+                    <span style="color:#999;">${correct} correct · ${results.filter(r=>r.result==='wrong').length} wrong · ${results.filter(r=>r.result==='skipped').length} skipped</span>
+                    <span>100%</span>
+                </div>
+                <div class="ar-pulse-wrap">
+                    <div class="ar-pulse-ttl">Cumulative Score Trajectory</div>
+                    ${pulseSVG}
+                </div>
+            </div>
+
+            <div class="ar-box">
+                <div class="ar-box-ttl">Score Projection Matrix</div>
+                ${predRows}
+                <div class="ar-insight">${insight}</div>
+            </div>
+        </div>
+
+        <div class="ar-actions">
+            <button class="ar-btn ar-btn-primary" onclick="location.reload()">↺ &nbsp;Play Again</button>
+            <button class="ar-btn ar-btn-ghost" onclick="toggleModal(true)">View IQ Scale</button>
+        </div>
+    `;
+
+    requestAnimationFrame(()=>{
+        document.querySelectorAll('.ar-pred-fill').forEach(el=>{
+            const w = el.dataset.w;
+            setTimeout(()=>{ el.style.width = w+'%'; }, 50);
+        });
+        // Bell animation fires once via fbPatchLive or fbPatchBadge — not here
+    });
+}
+
+/* =========================================================
+   BELL CURVE DOT — follows the curve path via JS animation
+========================================================= */
+function runMarkerAnimation(marker, pct) {
+    if (!marker) return;
+
+    // Must match buildBellSVG exactly
+    const W=720, H=210, mL=12, mR=12, mT=40, mB=36;
+    const cH=H-mT-mB, baseY=H-mB;
+    const zMin=-3.5, peak=normalPDF(0);
+    const mZ = z => mL + ((z-zMin)/7.0)*(W-mL-mR);
+    const mP = p => baseY - (p/peak)*cH;
+    const uZ = probit(Math.max(1,Math.min(99,pct))/100);
+    const uX = mZ(uZ), uY = mP(normalPDF(uZ));
+
+    // 80 offsets from target (uX,uY) tracing the bell curve left→user
+    const N = 80;
+    const offsets = [];
+    for (let i = 0; i <= N; i++) {
+        const z = zMin + (i/N)*(uZ-zMin);
+        offsets.push([mZ(z)-uX, mP(normalPDF(z))-uY]);
+    }
+
+    const duration = 1800;
+    const start    = performance.now();
+    const ease     = t => 1 - Math.pow(1-t, 3);
+
+    function frame(now) {
+        const t     = Math.min((now-start)/duration, 1);
+        const eased = ease(t);
+        const idx   = Math.min(Math.round(eased*N), N);
+        const [dx, dy] = offsets[idx];
+
+        marker.setAttribute('transform', `translate(${dx.toFixed(2)},${dy.toFixed(2)})`);
+        // Use SVG attribute — bypasses any CSS specificity issues
+        marker.setAttribute('opacity', Math.min(t/0.12, 1).toFixed(3));
+
+        if (t < 1) requestAnimationFrame(frame);
+        else {
+            marker.removeAttribute('transform');
+            marker.setAttribute('opacity', '1');
+        }
+    }
+
+    requestAnimationFrame(frame);
+}
+
+function initBellAnimation() {
+    const bellBox = document.getElementById('ar-bell-wrap');
+    if (!bellBox) return;
+
+    function trigger() {
+        const svg    = bellBox.querySelector('svg');
+        const marker = document.getElementById('bellMarker');
+        if (!svg || !marker) return;
+        const pct = parseInt(svg.dataset.pct || '50');
+        runMarkerAnimation(marker, pct);
+    }
+
+    // Already visible when analytics loads → delay slightly for drama
+    const rect = bellBox.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+        setTimeout(trigger, 350);
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) { trigger(); observer.unobserve(entry.target); }
+        });
+    }, { threshold: 0.25 });
+    observer.observe(bellBox);
+}
+
+/* =========================================================
+   QUIZ FLOW
+========================================================= */
+function toggleModal(show){
+    document.getElementById('iqModal').classList.toggle('active',show);
+}
+
+function startAssessment(){
+    startTime = Date.now();
+    qResults = []; totalPoints = 0; score = 0;
+    qIdx = 0; r2QIdx = 0; r3QIdx = 0; currentRound = 1;
+    if (typeof window.fbPrewarm === 'function') window.fbPrewarm();
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('quizScreen').classList.remove('hidden');
+    renderQ1();
+}
+
+function updateProg(){
+    const roundLabel = currentRound===3 ? `Rapid Fire · Q${r3QIdx+1} of 4 ⚡` : `Round ${currentRound} · Q${qIdx+1} of ${TOTAL}`;
+    document.getElementById('questionCounter').innerText = roundLabel;
+    document.getElementById('progressBar').style.width = `${(qIdx/TOTAL)*100}%`;
+}
+
+/* ── ROUND 1 ── */
+function renderQ1(){
+    const d = R1[qIdx];
+    updateProg();
+    document.getElementById('quizDisplayAsset').src = d.img;
+    document.getElementById('questionText').innerText = d.q;
+    curAns = d.ans;
+    renderOpts(d.opts, handleR1Answer);
+}
+
+function handleR1Answer(sel){
+    const correct = sel===curAns;
+    const pts = correct ? PTS.r1c : PTS.r1w;
+    if(correct) score++;
+    totalPoints += pts;
+    qResults.push({ result: correct?'correct':'wrong', round:1, points:pts, label:R1[qIdx].label });
+    qIdx++;
+    if(qIdx < 5) renderQ1();
+    else {
+        document.getElementById('quizScreen').classList.add('hidden');
+        document.getElementById('round2SetupScreen').classList.remove('hidden');
+        document.getElementById('quizDisplayAsset').src = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230d0d0d'/%3E%3Ctext x='300' y='480' font-family='Arial' font-size='280' font-weight='bold' fill='%23FBB03B' text-anchor='middle'%3E?%3C/text%3E%3C/svg%3E";
+    }
+}
+
+/* ── ROUND 2 ── */
+function startRound2(cat){
+    selCat = cat; currentRound = 2; r2QIdx = 0;
+    document.getElementById('round2SetupScreen').classList.add('hidden');
+    document.getElementById('quizScreen').classList.remove('hidden');
+    renderR2Question();
+}
+
+function renderR2Question(){
+    const d = R2[selCat][r2QIdx];
+    updateProg();
+    document.getElementById('quizDisplayAsset').src = d.img;
+    document.getElementById('questionText').innerText = d.q;
+    curAns = d.ans;
+    renderOpts(d.opts, handleR2Answer);
+}
+
+function handleR2Answer(sel){
+    const correct = sel===curAns;
+    const pts = correct ? PTS.r2c : PTS.r2w;
+    if(correct) score++;
+    totalPoints += pts;
+    qResults.push({ result: correct?'correct':'wrong', round:2, points:pts, label:R2[selCat][r2QIdx].label });
+    qIdx++; r2QIdx++;
+    if(r2QIdx < 3) renderR2Question();
+    else showRound3Intro();
+}
+
+/* ── ROUND 3 INTRO ── */
+function showRound3Intro(){
+    document.getElementById('quizScreen').classList.add('hidden');
+    document.getElementById('round3IntroScreen').classList.remove('hidden');
+    document.getElementById('progressBar').style.width = `${(qIdx/TOTAL)*100}%`;
+    document.getElementById('quizDisplayAsset').src = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230d0d0d'/%3E%3Ctext x='300' y='420' font-family='Arial' font-size='200' fill='%23FBB03B' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3Ctext x='300' y='600' font-family='Arial' font-size='50' font-weight='bold' fill='%23FBB03B' text-anchor='middle'%3ERAPID FIRE%3C/text%3E%3C/svg%3E";
+}
+
+/* ── ROUND 3 ── */
+function startRound3(){
+    currentRound = 3; r3QIdx = 0;
+    document.getElementById('round3IntroScreen').classList.add('hidden');
+    document.getElementById('round3Screen').classList.remove('hidden');
+    renderR3Question();
+}
+
+function renderR3Question(){
+    if(r3QIdx >= R3.length){ executeTerminal(); return; }
+    const d = R3[r3QIdx];
+    document.getElementById('quizDisplayAsset').src = d.img;
+    document.getElementById('r3QuestionText').innerText = d.q;
+    document.getElementById('r3Counter').innerText = `Rapid Fire · Q${r3QIdx+1} of 4 ⚡`;
+    document.getElementById('progressBar').style.width = `${(qIdx/TOTAL)*100}%`;
+    curAns = d.ans;
+
+    // Build options
+    const box = document.getElementById('r3OptionsContainer');
+    box.innerHTML = '';
+    d.opts.forEach(o=>{
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.innerText = o;
+        btn.onclick = () => handleR3Answer(o);
+        box.appendChild(btn);
+    });
+    startR3Timer();
+}
+
+function startR3Timer(){
+    clearInterval(r3Interval);
+    let elapsed = 0;
+    const duration = 8000;
+    const fill = document.getElementById('r3TimerFill');
+    const num  = document.getElementById('r3TimerNum');
+    fill.style.width = '100%';
+    fill.style.background = '#22c55e';
+    num.style.color = '#FBB03B';
+
+    r3Interval = setInterval(()=>{
+        elapsed += 100;
+        const pct = Math.max(0, 100 - (elapsed/duration)*100);
+        const secLeft = Math.ceil((duration-elapsed)/1000);
+        fill.style.width = pct+'%';
+        num.innerText = secLeft;
+        // Color shift: green→orange→red
+        if(pct < 25) { fill.style.background='#ef4444'; num.style.color='#ef4444'; }
+        else if(pct < 50) { fill.style.background='#f97316'; num.style.color='#f97316'; }
+        if(elapsed >= duration){
+            clearInterval(r3Interval);
+            handleR3Skip();
+        }
+    }, 100);
+}
+
+function handleR3Answer(sel){
+    clearInterval(r3Interval);
+    const correct = sel===curAns;
+    const pts = correct ? PTS.r3c : PTS.r3w;
+    if(correct) score++;
+    totalPoints += pts;
+    qResults.push({ result: correct?'correct':'wrong', round:3, points:pts, label:R3[r3QIdx].label });
+    qIdx++; r3QIdx++;
+    if(r3QIdx < R3.length) renderR3Question();
+    else executeTerminal();
+}
+
+function handleR3Skip(){
+    qResults.push({ result:'skipped', round:3, points:0, label:R3[r3QIdx].label });
+    qIdx++; r3QIdx++;
+    if(r3QIdx < R3.length) renderR3Question();
+    else executeTerminal();
+}
+
+function renderOpts(opts, handler){
+    const box = document.getElementById('optionsContainer');
+    box.innerHTML = '';
+    opts.forEach(o=>{
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.innerText = o;
+        btn.onclick = () => handler(o);
+        box.appendChild(btn);
+    });
+}
+
+// handleAnswer kept as alias for backwards compat (not used in new flow)
+function handleAnswer(sel){ handleR1Answer(sel); }
+
+async function executeTerminal(){
+    clearInterval(r3Interval);
+    document.getElementById('progressBar').style.width='100%';
+    const r3s = document.getElementById('round3Screen');
+    if(r3s) r3s.classList.add('hidden');
+    const r3i = document.getElementById('round3IntroScreen');
+    if(r3i) r3i.classList.add('hidden');
+    document.getElementById('quizScreen').classList.add('hidden');
+    document.getElementById('progWrapper').classList.add('hidden');
+    document.getElementById('quizDisplayAsset').src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%230d0d0d'/%3E%3Cpath d='M250 500 Q300 700 300 700 Q300 700 350 500' fill='%23FBB03B'/%3E%3Ccircle cx='300' cy='350' r='110' fill='%23FBB03B'/%3E%3Crect x='200' y='710' width='200' height='36' rx='4' fill='%23FBB03B'/%3E%3Crect x='250' y='688' width='100' height='22' rx='3' fill='%23e2e8f0'/%3E%3C/svg%3E";
+
+    let name = prompt("Assessment finalized. Enter your name or initials:");
+    if(!name||!name.trim()) name="Anonymous";
+
+    const fallback = [1,2,5,10,18,28,42,58,70,80,88,94,99]; // 0-12 correct answers
+    const elapsed  = startTime ? Math.round((Date.now()-startTime)/1000) : 0;
+
+    // ── Show results IMMEDIATELY with static percentile ─────────────
+    document.getElementById('gameArea').classList.add('hidden');
+    document.getElementById('analyticsReport').classList.remove('hidden');
+    renderAnalytics(score, fallback[score], 'pending', qResults, elapsed, name, totalPoints);
+    confetti({ particleCount:220, spread:95, origin:{y:0.55}, colors:['#FBB03B','#ffffff','#f97316','#fde68a'] });
+
+    // ── Firebase runs in background — no timeout, no blocking ────────
+    if(typeof window.processMetricsPipeline === 'function'){
+        const badgeFallback = setTimeout(() => fbPatchBadge('Simulated Data'), 8000);
+        window.processMetricsPipeline(name, score, elapsed)
+            .then(res => {
+                clearTimeout(badgeFallback);
+                if(res && res.percentile != null) fbPatchLive(res.percentile, res.dist || {});
+            })
+            .catch(e => {
+                clearTimeout(badgeFallback);
+                console.error('[FB]', e.code || e.message);
+                fbPatchBadge(`Simulated · ${e.code || e.message || 'error'}`);
+            });
+    } else {
+        fbPatchBadge('Simulated Data');
+    }
+}
+
+// Helper: real score-based percentile from live distribution
+function calcProjectedPct(s, dist) {
+    const fallbackEst = [1,2,5,10,18,28,42,58,70,80,88,94,99]; // 0–12 correct
+    if (!dist || !dist.total) return fallbackEst[Math.min(s,12)];
+    const total = Math.max(Number(dist.total)||1, 1);
+    let atOrBelow = 0;
+    for(let i=0; i<=s; i++) atOrBelow += Number(dist[`s${i}`]||0);
+    return Math.max(1, Math.min(99, Math.round(atOrBelow / total * 100)));
+}
+
+// Helper: trigger bell animation once
+function _animateBell(pct) {
+    const svg    = document.querySelector('#ar-bell-wrap svg');
+    const marker = document.getElementById('bellMarker');
+    if(!svg || !marker) return;
+    // Replace SVG if pct differs from what's currently drawn
+    const currentPct = parseInt(svg.dataset.pct||'0');
+    if(currentPct !== pct) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = buildBellSVG(pct);
+        const newSvg = tmp.querySelector('svg');
+        svg.replaceWith(newSvg);
+    }
+    const m = document.getElementById('bellMarker');
+    if(m) setTimeout(() => runMarkerAnimation(m, pct), 150);
+}
+
+// Patch all live data once Firebase responds
+function fbPatchLive(pct, dist) {
+    // Badge
+    const badge = document.getElementById('fb-badge');
+    if(badge){ badge.className='ar-badge ar-badge-live'; badge.textContent='Live Global Data'; }
+
+    // Percentile KPI
+    const kpis = document.querySelectorAll('#ar-content .ar-kpi');
+    if(kpis[2]){
+        kpis[2].querySelector('.ar-kpi-val').innerHTML =
+            `${pct}<span style="font-size:0.85rem;color:#555;">th</span>`;
+    }
+
+    // Beat number
+    const bb = document.querySelector('#ar-content .ar-beat-big');
+    if(bb) bb.textContent = Math.max(0, pct-1) + '%';
+    const bs = document.querySelector('#ar-content .ar-beat-sub strong:last-of-type');
+    if(bs) bs.textContent = pct + 'th percentile';
+
+    // Bell curve — replace + animate ONCE
+    _animateBell(pct);
+
+    // Score Projection Matrix — monotonic percentiles anchored to live pct
+    const allRows = document.querySelectorAll('#ar-content .ar-pred-item');
+    // Extract current score from DOM
+    const curScoreEl = document.querySelector('#ar-content .ar-pred-item.cur .ar-pred-score');
+    const sc = curScoreEl ? parseInt(curScoreEl.textContent) : 0;
+    const baseSt = PCT_EST[Math.min(sc,12)]; // theoretical baseline for user's score
+
+    allRows.forEach(row => {
+        const isCur   = row.classList.contains('cur');
+        const pctEl   = row.querySelector('.ar-pred-pct');
+        const fill    = row.querySelector('.ar-pred-fill');
+        const scoreEl = row.querySelector('.ar-pred-score');
+        if(!pctEl || !scoreEl) return;
+
+        const s = parseInt(scoreEl.textContent); // parseInt("9/12YOU") → 9
+        if(isNaN(s)) return;
+
+        // For rows ABOVE user: shift the theoretical gain by actual pct (guarantees > user pct)
+        // For rows BELOW user: use static estimates directly (naturally below user's live pct)
+        let rowPct;
+        if(isCur) {
+            rowPct = pct;
+        } else if(s > sc) {
+            rowPct = Math.max(1, Math.min(99, pct + (PCT_EST[Math.min(s,12)] - baseSt)));
+        } else {
+            rowPct = PCT_EST[Math.min(s,12)];
+        }
+
+        const delta = rowPct - pct;
+        if(fill){
+            fill.style.transition = 'width 1s cubic-bezier(0.16,1,0.3,1)';
+            fill.style.width = rowPct + '%';
+        }
+        let deltaBadge = '';
+        if(!isCur && delta > 0) deltaBadge = `<span class="ar-pred-delta-up">+${Math.round(delta)}</span>`;
+        if(!isCur && delta < 0) deltaBadge = `<span class="ar-pred-delta-dn">${Math.round(delta)}</span>`;
+        pctEl.innerHTML = `${rowPct}th ${deltaBadge}`;
+    });
+}
+
+function fbPatchBadge(txt) {
+    const badge = document.getElementById('fb-badge');
+    if(badge){ badge.className='ar-badge ar-badge-offline'; badge.textContent=txt; }
+    // Firebase failed — animate bell with the static percentile (one-time fallback)
+    const svg = document.querySelector('#ar-bell-wrap svg');
+    if(svg) _animateBell(parseInt(svg.dataset.pct||'50'));
+}
+
+/* =========================================================
+   PLAY COUNT — reads total submissions from RTDB on load
+========================================================= */
+(function loadPlayCount(){
+    const RTDB = 'https://survival-quiz1-default-rtdb.firebaseio.com';
+    fetch(`${RTDB}/score_dist.json`)
+        .then(r => r.json())
+        .then(data => {
+            console.log('[PlayCount] score_dist data:', JSON.stringify(data));
+            const el = document.getElementById('playCountNum');
+            if (!el) return;
+            const total = (data && data.total) ? parseInt(data.total) : 0;
+            console.log('[PlayCount] total:', total);
+            if (total > 0) {
+                // Count-up animation
+                const dur = 1200, t0 = performance.now();
+                const tick = now => {
+                    const p = Math.min((now-t0)/dur, 1);
+                    el.textContent = Math.round(p * total).toLocaleString();
+                    if (p < 1) requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+            } else {
+                el.textContent = '0';
+            }
+        })
+        .catch(e => {
+            console.warn('[PlayCount] fetch failed:', e.message);
+            const el = document.getElementById('playCountNum');
+            if (el) el.textContent = '—';
+        });
+})();
+
+// ═══════════════════════════════════════════════════════════
+//  MUSIC ENGINE — Web Audio API, generative loops per genre
+//  No copyrighted audio: every sound is synthesized in code.
+// ═══════════════════════════════════════════════════════════
+let audioCtx = null, masterGain = null;
+let musicTimer = null, currentGenre = null, stepIdx = 0, nextStepTime = 0, trackEl = null;
+
+function initAudio(){
+    if(audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.35;            // background volume
+    masterGain.connect(audioCtx.destination);
+}
+
+// ── tiny synth helpers ─────────────────────────────────────
+function tone(freq, t, dur, type='sine', vol=0.5, slideTo=null){
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t+dur+0.05);
+}
+function kick(t, vol=0.9){ tone(150, t, 0.25, 'sine', vol, 40); }
+function snare(t, vol=0.5){
+    const len = audioCtx.sampleRate * 0.12;
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1-i/len);
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const f = audioCtx.createBiquadFilter(); f.type='highpass'; f.frequency.value=1800;
+    const g = audioCtx.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(masterGain); src.start(t);
+    tone(190, t, 0.08, 'triangle', vol*0.5);
+}
+function hat(t, vol=0.15){
+    const len = audioCtx.sampleRate * 0.04;
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1-i/len);
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const f = audioCtx.createBiquadFilter(); f.type='highpass'; f.frequency.value=7000;
+    const g = audioCtx.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(masterGain); src.start(t);
+}
+const MIDI = n => 440 * Math.pow(2, (n-69)/12);   // MIDI note number → frequency
+
+// ── genre patterns: each gets (t, s) where s = 16-step index in a 2-bar loop (0–31)
+// Each genre: 64-step loop (4 bars) + random embellishment so it never repeats exactly
+const GENRES = {
+    classical: { bpm: 96, step(t, s){
+        // 8-chord progression (C–G/B–Am–Em–F–C/E–Dm–G), flowing two-octave arpeggio
+        const prog = [[48,60,64,67],[47,59,62,67],[45,57,60,64],[40,55,59,64],
+                      [41,53,57,60],[40,52,60,64],[38,50,53,57],[43,55,59,62]];
+        const ch = prog[Math.floor(s/8) % 8];
+        const arp = [1,2,3,2,1,2,3,2];
+        tone(MIDI(ch[arp[s%8]]), t, 0.55, 'triangle', 0.26);
+        if(s%2===1) tone(MIDI(ch[arp[s%8]]+12), t, 0.3, 'sine', 0.07);   // octave shimmer
+        if(s%8===0) tone(MIDI(ch[0]), t, 2.0, 'sine', 0.22);             // bass
+        // occasional grace-note ornament — random, so phrases differ each pass
+        if(s%16===14 && Math.random()<0.5) tone(MIDI(ch[3]+12), t, 0.4, 'triangle', 0.10);
+        if(s===56) tone(MIDI(ch[2]+12), t, 1.2, 'sine', 0.10);           // cadence colour
+    }},
+    hiphop: { bpm: 86, step(t, s){
+        // Boom-bap with dark Rhodes-ish keys riff + sliding sub bass
+        if(s%8===0 || s%16===10 || (s%32===22)) kick(t, 1.0);
+        if(s%8===4) snare(t, 0.55);
+        if(s%2===0) hat(t, s%4===2 ? 0.2 : 0.12);
+        if(s%16===15 && Math.random()<0.4) hat(t, 0.18);                 // ghost hat
+        const bassLine = [33,33,36,31];                                  // A1 A1 C2 G1
+        const b = bassLine[Math.floor(s/16)%4];
+        if(s%16===0) tone(MIDI(b), t, 1.4, 'sine', 0.5, MIDI(b)*0.99);
+        if(s%16===12) tone(MIDI(b+3), t, 0.4, 'sine', 0.3);              // bass pickup
+        // minor-key keys stabs: Am7 voicing, lazy off-beat
+        const keys = [57,60,64,67];
+        if(s%16===6) keys.forEach(n => tone(MIDI(n), t, 0.5, 'triangle', 0.07));
+        if(s%32===20) keys.forEach(n => tone(MIDI(n-2), t, 0.5, 'triangle', 0.06));
+        // sparse top melody, randomized from A-minor pentatonic
+        if(s%8===7 && Math.random()<0.45){
+            const pent = [69,72,74,76,79];
+            tone(MIDI(pent[Math.floor(Math.random()*5)]), t, 0.35, 'sine', 0.09);
+        }
+    }},
+    jpop: { bpm: 132, step(t, s){
+        // Royal-road progression (IVmaj7–V7–iii–vi) ×2 with hook melody + fills
+        const prog = [[65,69,72,76],[67,71,74,77],[64,67,71,76],[69,72,76,81]];
+        const ch = prog[Math.floor(s/8) % 4];
+        if(s%4===0) kick(t, 0.7);
+        if(s%8===4) snare(t, 0.4);
+        hat(t, s%2===0 ? 0.09 : 0.05);
+        if(s%32>=28 && s%4===2) snare(t, 0.25);                          // mini drum fill
+        if(s%2===0) ch.slice(0,3).forEach(n => tone(MIDI(n), t, 0.16, 'square', 0.05));
+        if(s%8===0) tone(MIDI(ch[0]-24), t, 0.4, 'sine', 0.35);          // bass
+        if(s%8===6) tone(MIDI(ch[0]-12), t, 0.2, 'sine', 0.25);          // bass bounce
+        // hook melody: 32-step phrase, answer phrase varies second time through
+        const hookA = [81,79,77,79,81,81,79,77, 76,77,79,77,76,74,72,74];
+        const hookB = [81,84,81,79,77,79,81,79, 77,76,74,76,77,79,81,79];
+        const mel = (Math.floor(s/32)%2===0 ? hookA : hookB)[Math.floor((s%32)/2)];
+        if(s%2===1) tone(MIDI(mel), t, 0.2, 'sawtooth', 0.10);
+        if(s%2===1 && Math.random()<0.2) tone(MIDI(mel+12), t, 0.12, 'sine', 0.04);
+    }},
+    rock: { bpm: 124, step(t, s){
+        // Two alternating riffs (E5–G5–A5 / E5–D5–C5) + lead fill every 4th bar
+        if(s%4===0) kick(t, 0.9);
+        if(s%8===4) snare(t, 0.6);
+        if(s%2===0) hat(t, 0.18);
+        if(s%32>=30) snare(t, 0.3);                                      // crash-in fill
+        const riffA = [40,40,43,45], riffB = [40,40,38,36];
+        const riff = Math.floor(s/32)%2===0 ? riffA : riffB;
+        const root = riff[Math.floor((s%32)/8)];
+        if(s%2===0){
+            tone(MIDI(root),    t, 0.22, 'sawtooth', 0.20);
+            tone(MIDI(root+7),  t, 0.22, 'sawtooth', 0.14);
+            tone(MIDI(root+12), t, 0.22, 'sawtooth', 0.08);
+        }
+        // pentatonic lead lick over the last bar of each 4-bar phrase
+        if(s>=56 && s%2===1){
+            const lick = [76,79,81,79];
+            tone(MIDI(lick[Math.floor((s-56)/2)%4]), t, 0.18, 'square', 0.10);
+        }
+        if(s%16===8 && Math.random()<0.35) tone(MIDI(root+19), t, 0.3, 'square', 0.06); // harmonic squeal
+    }},
+    lofi: { bpm: 74, step(t, s){
+        // ii–V–I–vi jazz cycle, lazy beat, pentatonic noodling, constant vinyl bed
+        const prog = [[50,57,60,65],[43,55,59,62],[48,55,60,64],[45,52,57,60]];
+        const ch = prog[Math.floor(s/16)%4];
+        if(s%16===0) ch.forEach((n,i) => tone(MIDI(n), t+i*0.03, 2.6, 'sine', 0.10));
+        if(s%16===8) ch.slice(1).forEach((n,i) => tone(MIDI(n), t+i*0.02, 1.2, 'triangle', 0.05)); // re-voice
+        if(s%8===0) kick(t, 0.5);
+        if(s%8===5) snare(t, 0.16);
+        if(s%4===2) hat(t, 0.05);
+        if(s%16===13 && Math.random()<0.5) kick(t, 0.3);                 // lazy ghost kick
+        // melodic noodling: random walk on A-minor pentatonic, sparse
+        if(s%4===3 && Math.random()<0.55){
+            const pent = [69,72,74,76,79,81];
+            tone(MIDI(pent[Math.floor(Math.random()*6)]), t, 0.6, 'sine', 0.08);
+        }
+        if(s%32===0){  // vinyl crackle bed, retriggered every 2 bars
+            const len = audioCtx.sampleRate * 2.8;
+            const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            for(let i=0;i<len;i++) d[i] = (Math.random()*2-1)*0.014;
+            const src = audioCtx.createBufferSource(); src.buffer = buf;
+            const f = audioCtx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=3500;
+            src.connect(f); f.connect(masterGain); src.start(t);
+        }
+    }}
+};
+
+// ── scheduler: lookahead pattern (precise Web Audio timing) ──
+function schedulerTick(){
+    const g = GENRES[currentGenre];
+    const stepDur = 60 / g.bpm / 4;          // a 16th note
+    while(nextStepTime < audioCtx.currentTime + 0.12){
+        g.step(nextStepTime, stepIdx);
+        nextStepTime += stepDur;
+        stepIdx = (stepIdx + 1) % 64;
+    }
+}
+
+function startMusic(genre){
+    initAudio();
+    stopMusic();
+    // ── Try real audio file first: music/<genre>.mp3 next to this HTML ──
+    // Drop royalty-free MP3s (e.g. from Pixabay Music) into a "music" folder
+    // named classical.mp3, hiphop.mp3, jpop.mp3, rock.mp3, lofi.mp3.
+    // If the file exists it plays & loops; if not, the synth engine takes over.
+    const el = new Audio('music/' + genre + '.mp3');
+    el.loop = true; el.volume = 0.5;
+    el.play().then(() => {
+        trackEl = el;
+        currentGenre = genre;
+        console.log('[Music] playing MP3 track:', genre);
+    }).catch(() => {
+        startSynth(genre);   // no file found → generative synth
+    });
+}
+function startSynth(genre){
+    const begin = () => {
+        currentGenre = genre;
+        stepIdx = 0;
+        nextStepTime = audioCtx.currentTime + 0.08;
+        musicTimer = setInterval(schedulerTick, 40);
+        console.log('[Music] playing synth:', genre, '| ctx state:', audioCtx.state);
+    };
+    if(audioCtx.state === 'suspended'){
+        audioCtx.resume().then(begin).catch(e => console.warn('[Music] resume failed:', e));
+    } else {
+        begin();
+    }
+}
+function stopMusic(){
+    if(musicTimer){ clearInterval(musicTimer); musicTimer = null; }
+    if(trackEl){ trackEl.pause(); trackEl.src = ''; trackEl = null; }
+    currentGenre = null;
+}
+
+// ── UI wiring ──────────────────────────────────────────────
+function toggleMusicMenu(){
+    document.getElementById('genreRow').classList.toggle('hidden');
+}
+function selectGenre(genre){
+    const row = document.getElementById('genreRow');
+    const toggleBtn = document.getElementById('musicToggle');
+    const pills = row.querySelectorAll('.genre-pill');
+
+    if(currentGenre === genre){               // clicking active pill = stop
+        stopMusic();
+        row.classList.remove('has-active');
+        pills.forEach(p => p.classList.remove('active'));
+        toggleBtn.classList.remove('music-on');
+        toggleBtn.innerHTML = '🎶';
+        return;
+    }
+    startMusic(genre);
+    row.classList.add('has-active');
+    pills.forEach(p => p.classList.toggle('active', p.dataset.genre === genre));
+    toggleBtn.classList.add('music-on');
+    toggleBtn.innerHTML = '♪';
+    setTimeout(() => row.classList.add('hidden'), 450);   // auto-close popover
+}
+
+// ═══════════════════════════════════════════════════════════
+//  STARFIELD — generated night sky background
+// ═══════════════════════════════════════════════════════════
+(function buildSky(){
+    const sky = document.getElementById('skyBg');
+    if(!sky) return;
+    const rnd = (a,b) => a + Math.random()*(b-a);
+
+    // 90 small twinkling stars — mix of warm gold and cool white
+    const palette = ['#FFD97A','#FBB03B','#ffe9b8','#dfe8ff','#ffffff'];
+    for(let i=0;i<90;i++){
+        const s = document.createElement('div');
+        s.className = 'star';
+        const size = rnd(1, 2.6);
+        const col = palette[Math.floor(Math.random()*palette.length)];
+        s.style.cssText = `
+            left:${rnd(0,100)}%; top:${rnd(0,100)}%;
+            width:${size}px; height:${size}px; background:${col};
+            box-shadow: 0 0 ${size*3}px ${col};
+            --dur:${rnd(2.2,5.5)}s; --delay:${rnd(0,5)}s; --base:${rnd(0.25,0.6)};
+        `;
+        sky.appendChild(s);
+    }
+
+    // 7 large four-point sparkle stars (✦) in brand amber
+    for(let i=0;i<7;i++){
+        const sp = document.createElement('div');
+        sp.className = 'sparkle';
+        sp.textContent = '✦';
+        sp.style.cssText = `
+            left:${rnd(2,96)}%; top:${rnd(2,94)}%;
+            font-size:${rnd(10,20)}px;
+            --dur:${rnd(4,7)}s; --delay:${rnd(0,6)}s;
+        `;
+        sky.appendChild(sp);
+    }
+
+    // 3 shooting stars on long staggered cycles
+    for(let i=0;i<3;i++){
+        const sh = document.createElement('div');
+        sh.className = 'shooting-star';
+        sh.style.cssText = `
+            left:${rnd(40,95)}%; top:${rnd(3,40)}%;
+            --delay:${i*3.2 + rnd(0,2)}s;
+        `;
+        sky.appendChild(sh);
+    }
+})();
+</script>
+</body>
+</html>
